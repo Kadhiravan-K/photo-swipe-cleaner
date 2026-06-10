@@ -331,6 +331,125 @@ fun SettingsScreen(
                 }
             )
 
+            var showPinChangeDialog by remember { mutableStateOf(false) }
+
+            Button(
+                onClick = {
+                    showPinChangeDialog = true
+                },
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(imageVector = Icons.Default.Lock, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(6.dp))
+                val pinExists = prefs.getString("vault_pin_hash", null) != null
+                Text(
+                    text = if (pinExists) "Change Safe Passcode" else "Create Safe Passcode",
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+            }
+
+            if (showPinChangeDialog) {
+                var currentPinInput by remember { mutableStateOf("") }
+                var newPinInput by remember { mutableStateOf("") }
+                var confirmPinInput by remember { mutableStateOf("") }
+                var errorMsg by remember { mutableStateOf("") }
+                val hasPin = prefs.getString("vault_pin_hash", null) != null
+
+                AlertDialog(
+                    onDismissRequest = { showPinChangeDialog = false },
+                    title = { Text(if (hasPin) "Change Safe Passcode" else "Create Safe Passcode", color = Color.White) },
+                    text = {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Your Safe Passcode protects your locked private folder.", fontSize = 12.sp, color = Color.LightGray)
+                            
+                            if (hasPin) {
+                                OutlinedTextField(
+                                    value = currentPinInput,
+                                    onValueChange = { if (it.length <= 4) currentPinInput = it },
+                                    label = { Text("Current 4-Digit PIN") },
+                                    singleLine = true,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            
+                            OutlinedTextField(
+                                value = newPinInput,
+                                onValueChange = { if (it.length <= 4) newPinInput = it },
+                                label = { Text("New 4-Digit PIN") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            OutlinedTextField(
+                                value = confirmPinInput,
+                                onValueChange = { if (it.length <= 4) confirmPinInput = it },
+                                label = { Text("Confirm New PIN") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            
+                            if (errorMsg.isNotEmpty()) {
+                                Text(errorMsg, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                            }
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                val currentHash = prefs.getString("vault_pin_hash", null)
+                                if (hasPin) {
+                                    val hashedInput = try {
+                                        val bytes = currentPinInput.toByteArray()
+                                        val md = java.security.MessageDigest.getInstance("SHA-256")
+                                        val digest = md.digest(bytes)
+                                        digest.fold("") { str, it -> str + "%02x".format(it) }
+                                    } catch (e: Exception) { currentPinInput }
+                                    
+                                    if (hashedInput != currentHash) {
+                                        errorMsg = "Current PIN is incorrect."
+                                        return@Button
+                                    }
+                                }
+                                if (newPinInput.length != 4 || !newPinInput.all { it.isDigit() }) {
+                                    errorMsg = "New PIN must be exactly 4 digits."
+                                    return@Button
+                                }
+                                if (newPinInput != confirmPinInput) {
+                                    errorMsg = "PINs do not match."
+                                    return@Button
+                                }
+                                
+                                // Hash and save
+                                val newHash = try {
+                                    val bytes = newPinInput.toByteArray()
+                                    val md = java.security.MessageDigest.getInstance("SHA-256")
+                                    val digest = md.digest(bytes)
+                                    digest.fold("") { str, it -> str + "%02x".format(it) }
+                                } catch (e: Exception) { newPinInput }
+                                
+                                prefs.edit().putString("vault_pin_hash", newHash).apply()
+                                Toast.makeText(context, "Safe passcode updated successfully!", Toast.LENGTH_SHORT).show()
+                                showPinChangeDialog = false
+                            }
+                        ) {
+                            Text("Save")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showPinChangeDialog = false }) {
+                            Text("Cancel")
+                        }
+                    }
+                )
+            }
+
             Button(
                 onClick = {
                     Toast.makeText(context, "Exporting local gallery DB successfully as JSON file", Toast.LENGTH_SHORT).show()

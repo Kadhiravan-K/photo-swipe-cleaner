@@ -742,12 +742,45 @@ fun VaultTab(
     }
 }
 
+private fun hashPin(pin: String): String {
+    return try {
+        val bytes = pin.toByteArray()
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        val digest = md.digest(bytes)
+        digest.fold("") { str, it -> str + "%02x".format(it) }
+    } catch (e: Exception) {
+        pin
+    }
+}
+
 @Composable
 fun PinScreen(
     onSuccess: () -> Unit
 ) {
+    val context = LocalContext.current
+    val prefs = remember {
+        context.getSharedPreferences("photoflow_prefs", android.content.Context.MODE_PRIVATE)
+    }
+
     var pin by remember { mutableStateOf("") }
     var showError by remember { mutableStateOf(false) }
+    var setupStep by remember { mutableStateOf(0) } // 0 = initial check/setup, 1 = confirm setup digits
+    var tempPin by remember { mutableStateOf("") }
+
+    val savedPinHash = remember { prefs.getString("vault_pin_hash", null) }
+    val isFirstTime = savedPinHash == null
+
+    val titleText = when {
+        isFirstTime && setupStep == 0 -> "Create Safe PIN"
+        isFirstTime && setupStep == 1 -> "Confirm Passcode"
+        else -> "Enter Safe Code"
+    }
+
+    val subtitleText = when {
+        isFirstTime && setupStep == 0 -> "Set any 4 digits to lock your safe folder"
+        isFirstTime && setupStep == 1 -> "Re-enter the 4 digits to verify"
+        else -> "Private folder is locked. Enter PIN to proceed"
+    }
 
     Column(
         modifier = Modifier
@@ -764,13 +797,13 @@ fun PinScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Enter Safe Code",
+            text = titleText,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
         Text(
-            text = "Type '1234' to unlock your safe folder",
+            text = subtitleText,
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFFCAC4D0)
         )
@@ -795,7 +828,7 @@ fun PinScreen(
 
         if (showError) {
             Text(
-                text = "Incorrect code. Please try again.",
+                text = if (isFirstTime && setupStep == 1) "PINs do not match. Restarting..." else "Incorrect code. Please try again.",
                 color = MaterialTheme.colorScheme.error,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
@@ -834,11 +867,31 @@ fun PinScreen(
                                             if (pin.length < 4) {
                                                 pin += charChar
                                                 if (pin.length == 4) {
-                                                    if (pin == "1234") {
-                                                        onSuccess()
+                                                    if (isFirstTime) {
+                                                        if (setupStep == 0) {
+                                                            tempPin = pin
+                                                            pin = ""
+                                                            setupStep = 1
+                                                        } else {
+                                                            if (pin == tempPin) {
+                                                                val hashed = hashPin(pin)
+                                                                prefs.edit().putString("vault_pin_hash", hashed).apply()
+                                                                onSuccess()
+                                                            } else {
+                                                                showError = true
+                                                                pin = ""
+                                                                tempPin = ""
+                                                                setupStep = 0
+                                                            }
+                                                        }
                                                     } else {
-                                                        showError = true
-                                                        pin = ""
+                                                        val enteredHash = hashPin(pin)
+                                                        if (enteredHash == savedPinHash) {
+                                                            onSuccess()
+                                                        } else {
+                                                            showError = true
+                                                            pin = ""
+                                                        }
                                                     }
                                                 }
                                             }
