@@ -118,13 +118,13 @@ fun SettingsScreen(
             }
             Column {
                 Text(
-                    text = "Application Settings",
+                    text = "App Settings",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
                 Text(
-                    text = "Configure local models, swiping preferences, and organization",
+                    text = "Change how the app looks and works",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -132,9 +132,9 @@ fun SettingsScreen(
         }
 
         // Section 1: Gallery Organization (MOVE CATEGORIZATION FROM MAIN PAGE)
-        SettingsGroup(title = "Gallery Organization", icon = Icons.Default.FolderOpen) {
+        SettingsGroup(title = "Photo Groups to Show", icon = Icons.Default.FolderOpen) {
             Text(
-                text = "Permit specific categories to appear in active swipe lists and cleanup smart collections. Disabling hides them completely.",
+                text = "Choose which folders you want to show or hide in the app.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 12.dp)
@@ -144,7 +144,7 @@ fun SettingsScreen(
                 val isEnabled = categoriesEnabled[category] ?: true
                 RowSettingToggle(
                     title = category,
-                    subtitle = "Include $category in swipe queries",
+                    subtitle = "Show $category",
                     checked = isEnabled,
                     onCheckedChange = { newVal ->
                         categoriesEnabled[category] = newVal
@@ -157,10 +157,10 @@ fun SettingsScreen(
         }
 
         // Section 2: General Preferences
-        SettingsGroup(title = "General Settings", icon = Icons.Default.SettingsApplications) {
+        SettingsGroup(title = "My Preferences", icon = Icons.Default.SettingsApplications) {
             // Theme selection dropdown simulator
             DropdownSettingRow(
-                title = "Theme Variant",
+                title = "App Theme",
                 selectedOption = selectedTheme,
                 options = listOf("Dark Slate", "Dark Indigo", "Pure Black"),
                 onSelect = {
@@ -171,7 +171,7 @@ fun SettingsScreen(
 
             // Language
             DropdownSettingRow(
-                title = "App Language",
+                title = "Choose Language",
                 selectedOption = selectedLanguage,
                 options = listOf("English", "Spanish", "French", "German"),
                 onSelect = {
@@ -182,8 +182,8 @@ fun SettingsScreen(
 
             // Notifications
             RowSettingToggle(
-                title = "Push Notifications",
-                subtitle = "Alert on duplicate piles and health goals",
+                title = "Alerts",
+                subtitle = "Tell me when I have photos to tidy up",
                 checked = notificationsEnabled,
                 onCheckedChange = {
                     notificationsEnabled = it
@@ -193,7 +193,7 @@ fun SettingsScreen(
 
             // Swipe sensitivity
             SliderSettingRow(
-                title = "Swipe Sensitivity",
+                title = "How easy to slide photos",
                 value = swipeSensitivity,
                 onValueChange = {
                     swipeSensitivity = it
@@ -203,7 +203,7 @@ fun SettingsScreen(
 
             // Animation speed
             SliderSettingRow(
-                title = "Animation Speed multiplier",
+                title = "How fast things move",
                 value = animationSpeed,
                 onValueChange = {
                     animationSpeed = it
@@ -213,9 +213,9 @@ fun SettingsScreen(
         }
 
         // Section 3: Gallery Scopes
-        SettingsGroup(title = "Gallery Options", icon = Icons.Default.PhotoLibrary) {
+        SettingsGroup(title = "Gallery Scanning", icon = Icons.Default.PhotoLibrary) {
             DropdownSettingRow(
-                title = "Scan Locations Directory",
+                title = "Where to look for photos",
                 selectedOption = scanLocation,
                 options = listOf("/DCIM", "/DCIM/Camera", "/Pictures", "/Downloads"),
                 onSelect = {
@@ -225,8 +225,8 @@ fun SettingsScreen(
             )
 
             RowSettingToggle(
-                title = "Auto Scan Refresh",
-                subtitle = "Rescan database periodically in background",
+                title = "Keep looking for new photos",
+                subtitle = "Automatically find new photos in the background",
                 checked = autoRefresh,
                 onCheckedChange = {
                     autoRefresh = it
@@ -235,8 +235,8 @@ fun SettingsScreen(
             )
 
             RowSettingToggle(
-                title = "Scan Video Files",
-                subtitle = "Include video containers in deletion ranks",
+                title = "Include video files",
+                subtitle = "Show videos in your tidy up suggestions",
                 checked = includeVideos,
                 onCheckedChange = {
                     includeVideos = it
@@ -245,8 +245,8 @@ fun SettingsScreen(
             )
 
             RowSettingToggle(
-                title = "Index Local Screenshots",
-                subtitle = "Parse captures for automated categorization",
+                title = "Include screenshots",
+                subtitle = "Show screenshot pictures you took on your phone",
                 checked = includeScreenshots,
                 onCheckedChange = {
                     includeScreenshots = it
@@ -256,10 +256,10 @@ fun SettingsScreen(
         }
 
         // Section 4: AI Settings
-        SettingsGroup(title = "AI Model Engine", icon = Icons.Default.AutoAwesome) {
+        SettingsGroup(title = "Smart Photo Check", icon = Icons.Default.AutoAwesome) {
             RowSettingToggle(
-                title = "Enable AI Quality Scoring",
-                subtitle = "Run local metrics for blur, light and duplicates",
+                title = "Enable Photo Quality Check",
+                subtitle = "Check if photos are blurry, dark, or duplicates",
                 checked = enableAiAnalysis,
                 onCheckedChange = {
                     enableAiAnalysis = it
@@ -269,8 +269,8 @@ fun SettingsScreen(
             )
 
             RowSettingToggle(
-                title = "Enable Locally Guided Face Clusters",
-                subtitle = "Detect and group facial identities privately",
+                title = "Group Photos by Person",
+                subtitle = "Find and group similar faces automatically",
                 checked = enableFaceDetection,
                 onCheckedChange = {
                     enableFaceDetection = it
@@ -279,8 +279,8 @@ fun SettingsScreen(
             )
 
             RowSettingToggle(
-                title = "Enable Memory Protection Safeguards",
-                subtitle = "Prevent accidental swiping of key birthdays",
+                title = "Safe Keep Special Memories",
+                subtitle = "Keep safe very important pictures like birthdays",
                 checked = enableMemoryProtection,
                 onCheckedChange = {
                     enableMemoryProtection = it
@@ -289,8 +289,8 @@ fun SettingsScreen(
             )
 
             RowSettingToggle(
-                title = "Enable Generative Smart Recs",
-                subtitle = "Activate offline heuristics for duplicates",
+                title = "Enable Smart Suggestions",
+                subtitle = "Suggest photos to tidy up based on similarity",
                 checked = enableSmartRecommendations,
                 onCheckedChange = {
                     enableSmartRecommendations = it
@@ -299,9 +299,9 @@ fun SettingsScreen(
             )
 
             DropdownSettingRow(
-                title = "Processing Frequency bounds",
+                title = "How often to check photos",
                 selectedOption = aiProcessingFrequency,
-                options = listOf("Background Idle", "Daily Scheduled", "Hourly Scopes"),
+                options = listOf("When the App is Quiet", "Daily Scheduled", "Hourly Scopes"),
                 onSelect = {
                     aiProcessingFrequency = it
                     prefs.edit().putString("setting_ai_freq", it).apply()
@@ -310,10 +310,10 @@ fun SettingsScreen(
         }
 
         // Section 5: Secure Privacy
-        SettingsGroup(title = "Privacy-First Options", icon = Icons.Default.Security) {
+        SettingsGroup(title = "My Data Privacy", icon = Icons.Default.Security) {
             RowSettingToggle(
-                title = "Strict local off-grid computing",
-                subtitle = "Lock data strictly inside sandbox. Zero telemetry",
+                title = "Keep all checks on this phone",
+                subtitle = "Your photos never leave your device. Safe and secure.",
                 checked = localProcessingOnly,
                 onCheckedChange = {
                     localProcessingOnly = it
@@ -322,8 +322,8 @@ fun SettingsScreen(
             )
 
             RowSettingToggle(
-                title = "Files access permissions",
-                subtitle = "Configure system media level permits",
+                title = "Phone photo permissions",
+                subtitle = "Let the app search your phone's gallery",
                 checked = dataPermissionsGranted,
                 onCheckedChange = {
                     dataPermissionsGranted = it
@@ -339,7 +339,7 @@ fun SettingsScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Export Local Analytics DB Data", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text("Save database details", color = MaterialTheme.colorScheme.onPrimaryContainer, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
 
             Button(
@@ -353,12 +353,12 @@ fun SettingsScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Reset Cache & Empty DB Indices", color = MaterialTheme.colorScheme.onErrorContainer, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text("Clear all saved scans", color = MaterialTheme.colorScheme.onErrorContainer, fontWeight = FontWeight.Bold, fontSize = 12.sp)
             }
         }
 
         // Section 6: Local Storage allocation
-        SettingsGroup(title = "Sandbox Local Storage", icon = Icons.Default.Storage) {
+        SettingsGroup(title = "App Memory Space", icon = Icons.Default.Storage) {
             StorageAllocationBlock(
                 dbSize = viewModel.formatBytes(dbBytesCount),
                 cacheSize = viewModel.formatBytes(cacheBytesCount),
@@ -371,10 +371,10 @@ fun SettingsScreen(
         }
 
         // Section 7: About
-        SettingsGroup(title = "Information & Context", icon = Icons.Default.Info) {
-            InfoSettingRow(label = "Application Version", value = "1.4.2 [Production Stable]")
-            InfoSettingRow(label = "Sandbox processing protocol", value = "Privacy Offline First M3")
-            InfoSettingRow(label = "Interactive module rate", value = "Spring Elastic Vectors")
+        SettingsGroup(title = "About this App", icon = Icons.Default.Info) {
+            InfoSettingRow(label = "App Version", value = "1.4.2 [Production Stable]")
+            InfoSettingRow(label = "Privacy standard", value = "Privacy Offline First M3")
+            InfoSettingRow(label = "Look and feel", value = "Spring Elastic Vectors")
             
             Spacer(modifier = Modifier.height(4.dp))
             Row(
@@ -387,7 +387,7 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Submit App Feedback", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("Send Feedback", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
                 TextButton(
                     onClick = {
@@ -395,7 +395,7 @@ fun SettingsScreen(
                     },
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text("Review Privacy Policies", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                    Text("Privacy Policy", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 }
             }
         }
@@ -586,11 +586,11 @@ fun StorageAllocationBlock(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column {
-                Text("Database index footprints", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Saved scanning history", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(dbSize, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
             Column(horizontalAlignment = Alignment.End) {
-                Text("Model offline caches", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Temporary files", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(cacheSize, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
             }
         }
@@ -602,7 +602,7 @@ fun StorageAllocationBlock(
         ) {
             Icon(imageVector = Icons.Default.CleaningServices, contentDescription = null, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text("Run Database Pruning Tools", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text("Free Up Space", fontWeight = FontWeight.Bold, fontSize = 12.sp)
         }
     }
 }

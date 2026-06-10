@@ -239,7 +239,7 @@ fun AppBottomNavigation(
             selected = activeRoute == "chat",
             onClick = { onNavigate("chat") },
             icon = { Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null) },
-            label = { Text("AI Chat", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+            label = { Text("Chat", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
             modifier = Modifier.testTag("nav_chat")
         )
 
@@ -336,7 +336,7 @@ fun PermissionsRequestScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Grant Gallery Access",
+                text = "Give Access to Photos",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
@@ -345,7 +345,7 @@ fun PermissionsRequestScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "To allow PhotoFlow to rapidly scan, categorize, and execute offline quality assessments for your photos, we require secure access permission to your device media files.",
+                text = "To let PhotoFlow find blurry photos, group similar pictures, and help you tidy up your gallery offline, we need your permission to see your photos and videos.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
@@ -361,7 +361,7 @@ fun PermissionsRequestScreen(
                     .height(50.dp)
                     .testTag("grant_permissions_button")
             ) {
-                Text("Grant Secure Access", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                Text("Give Permission", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -384,7 +384,7 @@ fun QuickFiltersRow(
     ) {
         // Media types
         item {
-            FilterGroupTitle("Mime")
+            FilterGroupTitle("Type")
         }
         val mediaTypes = listOf("All", "Images", "Videos")
         items(mediaTypes) { type ->
@@ -399,14 +399,15 @@ fun QuickFiltersRow(
 
         // AI Quality/Categories
         item {
-            FilterGroupTitle("AI & Quality")
+            FilterGroupTitle("Quality Check")
         }
         val aiCategories = listOf("All", "Blurry", "Dark/Light", "Screenshots", "With Faces", "OCR / Documents")
         items(aiCategories) { cat ->
             val isSelected = aiCategory == cat
             val displayTitle = when (cat) {
-                "Dark/Light" -> "Exp. Issues"
-                "OCR / Documents" -> "Docs & OCR"
+                "Dark/Light" -> "Too Dark/Bright"
+                "OCR / Documents" -> "With Text"
+                "With Faces" -> "With People"
                 else -> cat
             }
             FilterChipItem(

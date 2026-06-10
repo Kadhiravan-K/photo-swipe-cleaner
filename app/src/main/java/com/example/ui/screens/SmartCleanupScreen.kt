@@ -113,17 +113,17 @@ fun SmartCleanupScreen(
         ) {
             Column {
                 Text(
-                    text = "Smart Cleanup",
+                    text = "Tidy Up Your Photos",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = when (activeTab) {
-                        "pruning" -> "Ranked suggestions based on blur & quality scores"
-                        "battle" -> "⚔️ Side-by-side sharpness showdowns"
-                        "whatsapp" -> "📱 Screenshot & WhatsApp greeting memebase sweeps"
-                        "selfie" -> "🤳 Selfie resolution comparing assistant"
-                        else -> "🔐 Secure sandbox hidden from normal scanners"
+                        "pruning" -> "Saves space by showing you blurry or dark photos"
+                        "battle" -> "⚔️ Compare similar photos side by side"
+                        "whatsapp" -> "📱 Cleans screenshots and WhatsApp pictures"
+                        "selfie" -> "🤳 Helps you choose the best selfies"
+                        else -> "🔐 Safe place to hide private pictures"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -145,7 +145,7 @@ fun SmartCleanupScreen(
                 ) {
                     Icon(imageVector = Icons.Default.DeleteSweep, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Prune (${selectedItems.size})", fontSize = 13.sp)
+                    Text("Tidy Up (${selectedItems.size})", fontSize = 13.sp)
                 }
             }
         }
@@ -161,11 +161,11 @@ fun SmartCleanupScreen(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             val tabs = listOf(
-                Pair("pruning", "Candidates 📋"),
-                Pair("battle", "Battle Mode ⚔️"),
-                Pair("whatsapp", "WhatsApp Junk 📱"),
-                Pair("selfie", "Selfie Assist 🤳"),
-                Pair("vault", "Locked Vault 🔐")
+                Pair("pruning", "Suggestions 📋"),
+                Pair("battle", "Compare Photos ⚔️"),
+                Pair("whatsapp", "WhatsApp Clean 📱"),
+                Pair("selfie", "Selfies 🤳"),
+                Pair("vault", "Private Vault 🔐")
             )
             tabs.forEach { tab ->
                 val isSelected = activeTab == tab.first
@@ -261,9 +261,9 @@ fun BattleModeTab(
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(32.dp)) {
                 Icon(imageVector = Icons.Default.Balance, contentDescription = null, tint = Color(0xFFD0BCFF), modifier = Modifier.size(64.dp))
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Your Gallery is Tuned", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("Your Gallery is Clean", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("No duplicate photo groups identified to battle. Excellent job keeping it clean!", style = MaterialTheme.typography.bodySmall, color = Color(0xFFCAC4D0), textAlign = TextAlign.Center)
+                Text("No similar photos found to compare. Great job keeping your gallery tidy!", style = MaterialTheme.typography.bodySmall, color = Color(0xFFCAC4D0), textAlign = TextAlign.Center)
             }
         }
     } else {
@@ -293,8 +293,8 @@ fun BattleModeTab(
                     .padding(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text("PHOTO BATTLE MODE", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color(0xFFD0BCFF))
-                Text("Tap on the better shot. The other photo is tossed to the Deletion Review Queue automatically.", style = MaterialTheme.typography.bodySmall, color = Color(0xFFCAC4D0), textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 4.dp))
+                Text("COMPARE PHOTOS", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color(0xFFD0BCFF))
+                Text("Tap the best photo. The other one will be moved to your deletion folder.", style = MaterialTheme.typography.bodySmall, color = Color(0xFFCAC4D0), textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 4.dp))
                 Spacer(modifier = Modifier.height(16.dp))
 
                 Row(
@@ -336,9 +336,9 @@ fun BattleModeTab(
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Sharpness: $sharpnessA%", fontSize = 11.sp, color = Color(0xFFE6E1E5))
+                        Text("Focus: $sharpnessA%", fontSize = 11.sp, color = Color(0xFFE6E1E5))
                         Text("Lighting: $brightnessA%", fontSize = 11.sp, color = Color(0xFFE6E1E5))
-                        Text("Overall Quality: $qualityScoreA%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF81C784))
+                        Text("Good Score: $qualityScoreA%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF81C784))
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = {
@@ -387,9 +387,9 @@ fun BattleModeTab(
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("Sharpness: $sharpnessB%", fontSize = 11.sp, color = Color(0xFFE6E1E5))
+                        Text("Focus: $sharpnessB%", fontSize = 11.sp, color = Color(0xFFE6E1E5))
                         Text("Lighting: $brightnessB%", fontSize = 11.sp, color = Color(0xFFE6E1E5))
-                        Text("Overall Quality: $qualityScoreB%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF81C784))
+                        Text("Good Score: $qualityScoreB%", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color(0xFF81C784))
                         Spacer(modifier = Modifier.height(8.dp))
                         Button(
                             onClick = {
@@ -454,8 +454,8 @@ fun WhatsAppScreenshotsTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("Expired Screenshots Detector", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
-                            Text("${expiredScreenshots.size} short-lived captures detected", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                            Text("Older Screenshots", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
+                            Text("${expiredScreenshots.size} pictures found", fontSize = 11.sp, color = Color(0xFFCAC4D0))
                         }
                         if (expiredScreenshots.isNotEmpty()) {
                             Button(
@@ -466,7 +466,7 @@ fun WhatsAppScreenshotsTab(
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFF2B8B5), contentColor = Color(0xFF601410)),
                                 modifier = Modifier.height(32.dp)
                             ) {
-                                Text("Prune All", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+                                Text("Delete All", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
                             }
                         }
                     }
@@ -474,7 +474,7 @@ fun WhatsAppScreenshotsTab(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     if (expiredScreenshots.isEmpty()) {
-                        Text("No expired screenshots identified.", fontSize = 12.sp, color = Color(0xFFCAC4D0))
+                        Text("No screenshots found to clean up.", fontSize = 12.sp, color = Color(0xFFCAC4D0))
                     } else {
                         expiredScreenshots.take(3).forEach { doc ->
                             Row(
@@ -493,7 +493,7 @@ fun WhatsAppScreenshotsTab(
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(doc.photo.fileName, maxLines = 1, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                                     val textExcerpt = doc.analysis?.extractedText?.take(30) ?: "Standard document print"
-                                    Text("OCR text: \"$textExcerpt...\"", maxLines = 1, fontSize = 10.sp, color = Color(0xFF64B5F6))
+                                    Text("Words found: \"$textExcerpt...\"", maxLines = 1, fontSize = 10.sp, color = Color(0xFF64B5F6))
                                 }
                                 IconButton(onClick = { viewModel.swipeAction(doc.photo.id, SwipeAction.DELETE) }) {
                                     Icon(imageVector = Icons.Default.HighlightOff, contentDescription = "Delete", tint = Color(0xFFF2B8B5))
@@ -519,8 +519,8 @@ fun WhatsAppScreenshotsTab(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("WhatsApp Greetings & Memes", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
-                            Text("${whatsappJunk.size} forwarding greeting memebases found", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                            Text("WhatsApp Greetings", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
+                            Text("${whatsappJunk.size} forwarded cards found", fontSize = 11.sp, color = Color(0xFFCAC4D0))
                         }
                         if (whatsappJunk.isNotEmpty()) {
                             Button(
@@ -531,7 +531,7 @@ fun WhatsAppScreenshotsTab(
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFD8E4), contentColor = Color(0xFF3B0B1E)),
                                 modifier = Modifier.height(32.dp)
                             ) {
-                                Text("Clear WhatsApp", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
+                                Text("Clean WhatsApp", fontSize = 10.sp, fontWeight = FontWeight.ExtraBold)
                             }
                         }
                     }
@@ -539,7 +539,7 @@ fun WhatsAppScreenshotsTab(
                     Spacer(modifier = Modifier.height(12.dp))
 
                     if (whatsappJunk.isEmpty()) {
-                        Text("No greeting cards or sticker memes identified in WhatsApp files.", fontSize = 12.sp, color = Color(0xFFCAC4D0))
+                        Text("No greeting cards found from WhatsApp.", fontSize = 12.sp, color = Color(0xFFCAC4D0))
                     } else {
                         whatsappJunk.take(3).forEach { meme ->
                             Row(
@@ -586,13 +586,13 @@ fun SelfieTab(
             .fillMaxSize()
             .padding(8.dp)
     ) {
-        Text("🤳 SELFIE CLEANUP ASSISTANT", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color(0xFFD0BCFF))
-        Text("Compare and organize portraits. Keep those with sharp eyes, smile metrics, and correct lighting, while throwing duplicates to Deletion queue.", style = MaterialTheme.typography.bodySmall, color = Color(0xFFCAC4D0))
+        Text("🤳 CHOOSE THE BEST SELFIES", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Black, color = Color(0xFFD0BCFF))
+        Text("Choose your favorite selfie. Keep the ones where you are smiling clearly, and delete the extra copies.", style = MaterialTheme.typography.bodySmall, color = Color(0xFFCAC4D0))
         Spacer(modifier = Modifier.height(16.dp))
 
         if (selfies.isEmpty()) {
             Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("No selfie items found in scanned photos database.", color = Color(0xFFCAC4D0), fontSize = 13.sp)
+                Text("No selfies found on your phone.", color = Color(0xFFCAC4D0), fontSize = 13.sp)
             }
         } else {
             LazyColumn(
@@ -623,19 +623,19 @@ fun SelfieTab(
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(selfie.photo.fileName, maxLines = 1, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                Text("👤 Self Portrait • Face names: ${selfie.analysis?.detectedFaceNames ?: "User"}", fontSize = 10.sp, color = Color(0xFF81C784))
+                                Text("👤 Selfie of ${selfie.analysis?.detectedFaceNames ?: "User"}", fontSize = 10.sp, color = Color(0xFF81C784))
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    Text("Sharpness: $sharpness%", fontSize = 9.sp, color = Color(0xFFCAC4D0))
-                                    Text("Lighting: $brightness%", fontSize = 9.sp, color = Color(0xFFCAC4D0))
+                                    Text("Clear: $sharpness%", fontSize = 9.sp, color = Color(0xFFCAC4D0))
+                                    Text("Bright: $brightness%", fontSize = 9.sp, color = Color(0xFFCAC4D0))
                                 }
                             }
                             Row {
                                 IconButton(onClick = { viewModel.swipeAction(selfie.photo.id, SwipeAction.FAVORITE) }) {
-                                    Icon(imageVector = Icons.Default.Star, contentDescription = "Favorite", tint = Color(0xFFFFD8E4))
+                                    Icon(imageVector = Icons.Default.Star, contentDescription = "Love", tint = Color(0xFFFFD8E4))
                                 }
                                 IconButton(onClick = { viewModel.swipeAction(selfie.photo.id, SwipeAction.DELETE) }) {
-                                    Icon(imageVector = Icons.Default.HighlightOff, contentDescription = "Delete", tint = Color(0xFFF2B8B5))
+                                    Icon(imageVector = Icons.Default.HighlightOff, contentDescription = "Trash", tint = Color(0xFFF2B8B5))
                                 }
                             }
                         }
@@ -667,7 +667,7 @@ fun VaultTab(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "🔐 Secured Private Vault (${vaultItems.size} items)",
+                    text = "🔐 Safe Folder (${vaultItems.size} picture(s))",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White
@@ -678,7 +678,7 @@ fun VaultTab(
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.height(32.dp)
                 ) {
-                    Text("Lock Vault", fontSize = 11.sp)
+                    Text("Hide Folder", fontSize = 11.sp)
                 }
             }
             Spacer(modifier = Modifier.height(16.dp))
@@ -688,9 +688,9 @@ fun VaultTab(
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(24.dp)) {
                         Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = Color(0xFFCAC4D0), modifier = Modifier.size(56.dp))
                         Spacer(modifier = Modifier.height(12.dp))
-                        Text("Secure Private Vault Empty", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text("Your Safe Folder is Empty", color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("Use the lock button found on normal candidates in Smart Cleanup to shield private albums.", style = MaterialTheme.typography.bodySmall, color = Color(0xFFCAC4D0), textAlign = TextAlign.Center)
+                        Text("Tap the lock icon on any photo to move it here, out of view from your main gallery.", style = MaterialTheme.typography.bodySmall, color = Color(0xFFCAC4D0), textAlign = TextAlign.Center)
                     }
                 }
             } else {
@@ -719,7 +719,7 @@ fun VaultTab(
                                 Spacer(modifier = Modifier.width(16.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(item.photo.fileName, maxLines = 1, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                                    Text("Locked and Encrypted • Hidden from grid", fontSize = 11.sp, color = Color(0xFFCAC4D0))
+                                    Text("Hidden and locked safely", fontSize = 11.sp, color = Color(0xFFCAC4D0))
                                 }
                                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                     IconButton(
@@ -730,7 +730,7 @@ fun VaultTab(
                                     IconButton(
                                         onClick = { viewModel.swipeAction(item.photo.id, SwipeAction.DELETE) }
                                     ) {
-                                        Icon(imageVector = Icons.Default.DeleteSweep, contentDescription = "Delete", tint = Color(0xFFF2B8B5))
+                                        Icon(imageVector = Icons.Default.DeleteSweep, contentDescription = "Trash", tint = Color(0xFFF2B8B5))
                                     }
                                 }
                             }
@@ -764,13 +764,13 @@ fun PinScreen(
         )
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Enter Vault Passcode",
+            text = "Enter Safe Code",
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
             color = Color.White
         )
         Text(
-            text = "Enter '1234' to unlock your private vault offline",
+            text = "Type '1234' to unlock your safe folder",
             style = MaterialTheme.typography.bodySmall,
             color = Color(0xFFCAC4D0)
         )
@@ -795,7 +795,7 @@ fun PinScreen(
 
         if (showError) {
             Text(
-                text = "Incorrect passcode. Try again.",
+                text = "Incorrect code. Please try again.",
                 color = MaterialTheme.colorScheme.error,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
@@ -874,9 +874,9 @@ fun SmartCleanupRow(
     val reasons = remember(analysis) {
         val list = mutableListOf<String>()
         if (analysis != null) {
-            if (analysis.blurScore > 0.6f) list.add("High Blur")
-            if (analysis.brightnessScore < 0.2f) list.add("Very Dark")
-            if (analysis.brightnessScore > 0.8f) list.add("Overexposed")
+            if (analysis.blurScore > 0.6f) list.add("Blurry")
+            if (analysis.brightnessScore < 0.2f) list.add("Dark")
+            if (analysis.brightnessScore > 0.8f) list.add("Too Bright")
             if (analysis.screenshotProbabilityScore > 0.8f) list.add("Screenshot")
         }
         list
@@ -1000,7 +1000,7 @@ fun SmartCleanupRow(
                             .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
-                            text = "$scorePercent% Prunes",
+                            text = "Extra copy: $scorePercent%",
                             fontSize = 10.sp,
                             fontWeight = FontWeight.SemiBold,
                             color = if (scorePercent >= 75) Color(0xFFF2B8B5)
@@ -1033,7 +1033,7 @@ fun SmartCleanupRow(
             ) {
                 Icon(
                     imageVector = Icons.Default.Lock,
-                    contentDescription = "Lock photo",
+                    contentDescription = "Hide photo",
                     tint = Color(0xFFD0BCFF).copy(alpha = 0.7f),
                     modifier = Modifier.size(18.dp)
                 )
@@ -1097,7 +1097,7 @@ fun DuplicateGroupBanner(
                     )
                 }
                 Text(
-                    text = "Duplicate Candidates",
+                    text = "Similar Photos",
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.titleMedium,
                     color = Color(0xFFE6E1E5)
@@ -1106,7 +1106,7 @@ fun DuplicateGroupBanner(
 
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "We configured similar pixel hashes locally and identified $groupsCount duplicate photo clusters.",
+                text = "We found $groupsCount sets of photos that look almost the same.",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color(0xFFCAC4D0),
                 lineHeight = 16.sp
@@ -1131,7 +1131,7 @@ fun DuplicateGroupBanner(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                "Gemini Best Shot recommendation:", 
+                                "Our helper's favorite choice:", 
                                 fontSize = 12.sp, 
                                 fontWeight = FontWeight.Bold,
                                 color = Color(0xFFE6E1E5)
@@ -1139,7 +1139,7 @@ fun DuplicateGroupBanner(
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text(
-                            text = "Recommend keeping Image ${bestShotResult.bestIndex + 1}: ${bestShotResult.explanation}",
+                            text = "We suggest keeping the ${bestShotResult.bestIndex + 1} picture because: ${bestShotResult.explanation}",
                             fontSize = 11.sp,
                             color = Color(0xFFCAC4D0),
                             lineHeight = 16.sp
@@ -1154,7 +1154,7 @@ fun DuplicateGroupBanner(
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.height(32.dp)
                         ) {
-                            Text("Acknowledge", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                            Text("Got it", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -1175,7 +1175,7 @@ fun DuplicateGroupBanner(
                         } else {
                             Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Select Best Shot with Gemini", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text("Find the Best Photo", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                         }
                     }
                 } else {
@@ -1186,7 +1186,7 @@ fun DuplicateGroupBanner(
                         border = ButtonDefaults.outlinedButtonBorder.copy(),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Add API key to unlock Best Shot Decision", fontSize = 11.sp, color = Color(0xFFCAC4D0).copy(alpha = 0.4f))
+                        Text("Enter a key in settings to let your helper pick the best photo", fontSize = 11.sp, color = Color(0xFFCAC4D0).copy(alpha = 0.4f))
                     }
                 }
             }
@@ -1213,14 +1213,14 @@ fun EmptyCleanupState(isScanning: Boolean) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Perfect local state!",
+                text = "All Clean!",
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center
             )
             Text(
-                text = if (isScanning) "Performing local pixel calculations..." 
-                      else "Your local analysis returned 0 high-risk elements. All clear!",
+                text = if (isScanning) "Checking your photos..." 
+                      else "No blurry or extra photos found. Everything is tidy!",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center

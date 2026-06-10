@@ -107,9 +107,9 @@ fun ChatScreen(
             add(
                 ChatMessage(
                     sender = ChatSender.AI,
-                    text = "Hello! I am your PhotoFlow AI Gallery Assistant. Ask me anything about your favorite memories, family photos, locations, sunsets, screenshots, or run smart cleanup actions! Try voice chat or click any prompt shortcut below.",
+                    text = "Hello! I am your Gallery Assistant. Ask me anything about your favorite pictures, family photos, trips, sunsets, screenshots, or clean up extra photos! Tap on voice chat or any quick question below.",
                     confidenceScore = 1.0,
-                    explanation = "Default system welcoming introduction."
+                    explanation = "Default welcoming introduction."
                 )
             )
         }
@@ -336,9 +336,9 @@ fun ChatScreen(
                             it.photo.filePath.lowercase().contains("scenic") ||
                             it.photo.category == "Camera Photos"
                         }.map { it.photo.id }.toMutableList()
-                        speechAnswer = "I scanned your gallery privately and located ${matchedIds.size} awesome sunset photos capturing outdoor scenic sky gradients!"
+                        speechAnswer = "I searched your photos and found ${matchedIds.size} beautiful sunset pictures!"
                         confidence = 0.95
-                        explanationText = "Analyzed filename substrings for 'sunset'/'sky' matches and grouped results under outdoor tags."
+                        explanationText = "Searched for photos containing 'sunset' or 'sky' in their file names."
                         suggestedAlbumStr = "Sunset Wonders"
                     } 
                     else if (q.contains("bike") || q.contains("cycle") || q.contains("riding")) {
@@ -347,9 +347,9 @@ fun ChatScreen(
                             it.photo.fileName.lowercase().contains("motor") ||
                             it.analysis?.extractedText?.lowercase()?.contains("bike") == true
                         }.map { it.photo.id }.toMutableList()
-                        speechAnswer = "I scanned your collections and successfully detected ${matchedIds.size} files related to your motorcycle, bike rides, or rides!"
+                        speechAnswer = "I searched your folders and found ${matchedIds.size} pictures of your bikes and rides!"
                         confidence = 0.92
-                        explanationText = "Matched filename character signatures and local text tokens indicating active vehicle profiles."
+                        explanationText = "Looked for files containing 'bike' or 'motor' in their names."
                         suggestedAlbumStr = "My Rides"
                     }
                     else if (q.contains("ooty") || q.contains("trip") || q.contains("travel")) {
@@ -360,9 +360,9 @@ fun ChatScreen(
                             it.analysis?.extractedText?.lowercase()?.contains("ooty") == true ||
                             it.photo.dateAdded > (System.currentTimeMillis() / 1000L - 30 * 86450L) // recent simulated trip
                         }.map { it.photo.id }.toMutableList()
-                        speechAnswer = "I found ${matchedIds.size} travel memories matching your trips! These are clustered beautifully into scenic timeline frames."
+                        speechAnswer = "I found ${matchedIds.size} beautiful travel pictures from your trips!"
                         confidence = 0.89
-                        explanationText = "Travel and exploration labels extracted via date proximity metrics and folder locations."
+                        explanationText = "Looked for travel folders and trip locations."
                         suggestedAlbumStr = "Ooty Vacation"
                     }
                     else if (q.contains("family") || q.contains("group") || q.contains("people") || q.contains("friends")) {
@@ -371,9 +371,9 @@ fun ChatScreen(
                             it.analysis?.detectedFaceNames?.lowercase()?.contains("family") == true ||
                             it.analysis?.detectedFaceNames?.lowercase()?.contains("friends") == true
                         }.map { it.photo.id }.toMutableList()
-                        speechAnswer = "I detected family circles in your gallery! Found ${matchedIds.size} photos containing portraits of friends or loved ones (with face count >= 2)."
+                        speechAnswer = "I found ${matchedIds.size} pictures containing face portraits of friends, family, or loved ones!"
                         confidence = 0.98
-                        explanationText = "Queried face detection arrays in Room indices where face clusters are above multi-human threshold."
+                        explanationText = "Looked for pictures containing multiple people's faces."
                         suggestedAlbumStr = "Family Portrait Moments"
                     }
                     else if (q.contains("certificate") || q.contains("receipt") || q.contains("document") || q.contains("ocr") || q.contains("text")) {
@@ -382,18 +382,18 @@ fun ChatScreen(
                             it.analysis?.extractedText?.isNotEmpty() == true ||
                             it.analysis?.screenshotProbabilityScore?.let { s -> s > 0.7f } == true
                         }.map { it.photo.id }.toMutableList()
-                        speechAnswer = "I located ${matchedIds.size} text-heavy screenshots and documents containing OCR-extracted readable words, slips, codes, or receipts."
+                        speechAnswer = "I found ${matchedIds.size} screenshots and text documents containing readable words and slips."
                         confidence = 0.94
-                        explanationText = "Analyzed character density indexes and high-probability screenshot indicators."
+                        explanationText = "Looked for screenshots with text on them."
                         suggestedAlbumStr = "Document Filing"
                     }
                     else if (q.contains("blurry") || q.contains("blur")) {
                         matchedIds = rawPhotosList.filter { 
                             it.analysis?.let { ans -> ans.blurScore > 0.5f } == true 
                         }.map { it.photo.id }.toMutableList()
-                        speechAnswer = "Here are ${matchedIds.size} blurry shots. These photos have an AI blur factor > 50% and are recommended under Smart Cleanup!"
+                        speechAnswer = "I found ${matchedIds.size} blurry photos. These might be pictures you can tidy up!"
                         confidence = 0.97
-                        explanationText = "Queried camera defocus analytics and ISO frequency coefficients."
+                        explanationText = "Looked for out-of-focus and blurry pictures."
                     }
                     else if (q.contains("month") || q.contains("frequent") || q.contains("most photos")) {
                         // Analytics query
@@ -404,17 +404,17 @@ fun ChatScreen(
                         }
                         val mostActive = monthMap.maxByOrNull { it.value }
                         speechAnswer = if (mostActive != null) {
-                            "Based on your local gallery history, your most photographed month was **${mostActive.key}** with a record of **${mostActive.value} photos captured!**"
+                            "Your busiest month was **${mostActive.key}** where you saved **${mostActive.value} photos!**"
                         } else {
-                            "Based on local statistics, you captured most of your camera roll photos during the recent spring season."
+                            "You saved most of your photos during the spring season."
                         }
                         confidence = 1.0
-                        explanationText = "Aggregated count frequencies of Android date-added values in Room SQLite."
+                        explanationText = "Calculated photos saved by month."
                     }
                     else if (q.contains("who") || q.contains("appear")) {
-                        speechAnswer = "Your friends Alice, Mom, and Dad are the most photographed faces, appearing in over 60% of portrait photos!"
+                        speechAnswer = "Alice, Mom, and Dad appear the most in your photos!"
                         confidence = 0.91
-                        explanationText = "Analyzed facial grouping clusters saved securely in local SharedPreferences identifiers."
+                        explanationText = "Sorted photos securely by the faces recognized in them."
                     }
                     else {
                         // General matching
@@ -423,9 +423,9 @@ fun ChatScreen(
                             it.photo.category.lowercase().contains(q) ||
                             it.analysis?.extractedText?.lowercase()?.contains(q) == true
                         }.map { it.photo.id }.toMutableList()
-                        speechAnswer = "I analyzed your sandbox roll and found ${matchedIds.size} items matching \"$query\"."
+                        speechAnswer = "I searched your photos and found ${matchedIds.size} pictures matching \"$query\"."
                         confidence = 0.85
-                        explanationText = "Direct textual scanning of metadata fields."
+                        explanationText = "Searched for matching words inside photo details."
                     }
 
                     if (q.contains("create") || q.contains("album") || q.contains("move") || q.contains("collection")) {
@@ -448,7 +448,7 @@ fun ChatScreen(
                             )
                         )
                     }
-                    speechAnswer += "\n\n🚀 **Smart Command Executed:** Successfully created the virtual collection **\"$albumName\"** and indexed matching assets securely!"
+                    speechAnswer += "\n\n🚀 **Collection Created:** Made a new photo group called **\"$albumName\"** for you!"
                 }
 
                 // Map photo entities for final chat bubble display
@@ -476,7 +476,7 @@ fun ChatScreen(
                 messages.add(
                     ChatMessage(
                         sender = ChatSender.AI,
-                        text = "I encountered an error analyzing your secure metadata sandbox: ${e.message}. Please verify local indices are loaded.",
+                        text = "Oops! I ran into an error reading your photos. Please make sure your gallery is loaded.",
                         confidenceScore = 0.0
                     )
                 )
@@ -530,7 +530,7 @@ fun ChatScreen(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text(
-                                text = "PhotoFlow AI Chat",
+                                text = "PhotoFlow Chat",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
@@ -542,7 +542,7 @@ fun ChatScreen(
                                     .padding(horizontal = 5.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    text = "SANDBOX COMPACT",
+                                    text = "MEMORIES SEARCH",
                                     fontSize = 8.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color(0xFFC2F1D2)
@@ -550,7 +550,7 @@ fun ChatScreen(
                             }
                         }
                         Text(
-                            text = "Chat offline with your encrypted library metadata",
+                            text = "Ask questions about your pictures offline",
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -563,7 +563,7 @@ fun ChatScreen(
                         onClick = {
                             ttsEnabled = !ttsEnabled
                             prefs.edit().putBoolean("ai_chat_tts_default", ttsEnabled).apply()
-                            Toast.makeText(context, if (ttsEnabled) "TTS narration default ON" else "TTS narration OFF", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, if (ttsEnabled) "Voice reader turned on" else "Voice reader turned off", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.size(36.dp)
                     ) {
@@ -618,7 +618,7 @@ fun ChatScreen(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Your Privacy is Locked In Secure Sandbox",
+                        text = "Your pictures are private",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
@@ -626,7 +626,7 @@ fun ChatScreen(
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "PhotoFlow structures all indexed face counts, text tokens, dates, and scenic definitions strictly within Room. Zero actual photographs or files leave this machine.\n\nAuthorizing AI Chat uses high-assurance metadata matching to answer natural inquiries (e.g., 'find my bike photos' or 'Show my highest active month').",
+                        text = "PhotoFlow details are saved securely on your phone. None of your actual photos or files ever leave this device.\n\nGiving permission lets you search or organize your photos using your own words (like 'find my bike pictures' or 'how many photos did I take in July?').",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -637,12 +637,12 @@ fun ChatScreen(
                         onClick = {
                             privacyConsentGranted = true
                             prefs.edit().putBoolean("ai_chat_privacy_consent", true).apply()
-                            Toast.makeText(context, "AI features authorized. Sandbox enabled.", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Permission given. Chat is ready!", Toast.LENGTH_SHORT).show()
                         },
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Accept & Enable Secure AI Gallery Chat", fontWeight = FontWeight.Bold)
+                        Text("I Agree & Turn on Search and Chat", fontWeight = FontWeight.Bold)
                     }
                 }
             } else {
@@ -716,12 +716,12 @@ fun ChatScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     val promptList = listOf(
-                        "Show my best sunset photos" to Icons.Default.WbSunny,
-                        "Find photos of my bike" to Icons.Default.DirectionsBike,
-                        "Create an album from Ooty trip" to Icons.Default.CreateNewFolder,
-                        "Find family photos with friends" to Icons.Default.PeopleOutline,
-                        "Which month did I take the most photos?" to Icons.Default.Leaderboard,
-                        "Show blurry screenshots of text" to Icons.Default.DocumentScanner
+                        "Show my best sunsets" to Icons.Default.WbSunny,
+                        "Find my bike photos" to Icons.Default.DirectionsBike,
+                        "Make an Ooty album" to Icons.Default.CreateNewFolder,
+                        "Find family and friends" to Icons.Default.PeopleOutline,
+                        "Which month did I take most photos?" to Icons.Default.Leaderboard,
+                        "Show blurry screenshots" to Icons.Default.DocumentScanner
                     )
 
                     items(promptList) { (text, icon) ->
@@ -794,7 +794,7 @@ fun ChatScreen(
                     OutlinedTextField(
                         value = textInput,
                         onValueChange = { textInput = it },
-                        placeholder = { Text("Chat with your photo roll...", fontSize = 13.sp, color = Color.Gray) },
+                        placeholder = { Text("Search in your own words...", fontSize = 13.sp, color = Color.Gray) },
                         modifier = Modifier
                             .weight(1f)
                             .heightIn(max = 120.dp)
@@ -893,7 +893,7 @@ fun AiTypingIndicator() {
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("PhotoFlow AI scanning metadata", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Searching photo details...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 CircularProgressIndicator(
                     modifier = Modifier.size(12.dp),
                     strokeWidth = 1.5.dp,
@@ -1013,7 +1013,7 @@ fun MessageBubble(
                                         .padding(horizontal = 6.dp, vertical = 2.dp)
                                 ) {
                                     Text(
-                                        text = "${(message.confidenceScore * 100).toInt()}% Match Confidence",
+                                        text = "${(message.confidenceScore * 100).toInt()}% Match",
                                         fontSize = 8.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color(0xFFE8DDFF)
@@ -1022,7 +1022,7 @@ fun MessageBubble(
 
                                 if (message.explanation != null) {
                                     Text(
-                                        text = if (explanationExpanded) "Hide details" else "Why chosen?",
+                                        text = if (explanationExpanded) "Hide details" else "Why did I grab these?",
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary,
@@ -1056,7 +1056,7 @@ fun MessageBubble(
                 if (message.photos.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Matching Gallery Assets (${message.photos.size})",
+                        text = "Pictures found (${message.photos.size})",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary,
@@ -1181,7 +1181,7 @@ fun VoiceRecordingWaveform(
                             .clip(CircleShape)
                             .background(Color.Red)
                     )
-                    Text("AI VOICE ANALYSIS ACTIVE", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("TALK TO YOUR GALLERY", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
 
                 Text(
@@ -1234,7 +1234,7 @@ fun VoiceRecordingWaveform(
                     contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                     modifier = Modifier.height(30.dp)
                 ) {
-                    Text("Disconnect Recording", color = MaterialTheme.colorScheme.onErrorContainer, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text("Stop Hearing", color = MaterialTheme.colorScheme.onErrorContainer, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1328,27 +1328,27 @@ fun ImgDetailsViewerDialog(
                 // Metadata detailed specifications
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Text(
-                        text = "Asset Detailed Metadata",
+                        text = "Photo Details",
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
                     
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        InfoLabel(title = "Origin Folder", value = photoItem.photo.category)
-                        InfoLabel(title = "Capture Date", value = viewModel.formatDate(photoItem.photo.dateAdded))
+                        InfoLabel(title = "Folder", value = photoItem.photo.category)
+                        InfoLabel(title = "Date Taken", value = viewModel.formatDate(photoItem.photo.dateAdded))
                     }
 
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        InfoLabel(title = "Resolution Size", value = "${photoItem.photo.width} x ${photoItem.photo.height}")
-                        InfoLabel(title = "Mime Context", value = photoItem.photo.mimeType)
+                        InfoLabel(title = "Size", value = "${photoItem.photo.width} x ${photoItem.photo.height}")
+                        InfoLabel(title = "Type", value = photoItem.photo.mimeType)
                     }
 
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         val blurPct = ((photoItem.analysis?.blurScore ?: 0f) * 100).toInt()
                         val exposureVal = ((photoItem.analysis?.brightnessScore ?: 0.5f) * 100).toInt()
-                        InfoLabel(title = "Motion Defocus (Blur)", value = "$blurPct%")
-                        InfoLabel(title = "Exposure Level", value = "$exposureVal%")
+                        InfoLabel(title = "Blur factor", value = "$blurPct%")
+                        InfoLabel(title = "Brightness", value = "$exposureVal%")
                     }
                 }
 
@@ -1362,25 +1362,25 @@ fun ImgDetailsViewerDialog(
                     Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-                            Text("Secure Local Sandbox Analytics", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                            Text("Local Photo Check", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
                         }
 
                         // Face annotations
                         Column {
                             val facesCnt = photoItem.analysis?.detectedFacesCount ?: 0
                             val faceNames = photoItem.analysis?.detectedFaceNames ?: ""
-                            Text("Detected Face Count: $facesCnt", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            Text("People in Photo: $facesCnt", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                             if (faceNames.isNotEmpty()) {
-                                Text("Classified labels: $faceNames", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text("Who is in this: $faceNames", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
 
                         // OCR extracted texts
                         Column {
                             val ocrText = photoItem.analysis?.extractedText ?: ""
-                            Text("Extracted OCR Words:", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
+                            Text("Words found in photo:", fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = Color.White)
                             Text(
-                                text = ocrText.ifEmpty { "No characters detected offline." },
+                                text = ocrText.ifEmpty { "No text found." },
                                 fontSize = 10.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 3,
@@ -1401,7 +1401,7 @@ fun ImgDetailsViewerDialog(
                             isFavorite = !isFavorite
                             // Hook directly to state triggers if repository has update capability
                             scope.launch {
-                                Toast.makeText(context, if (isFavorite) "Starred Favorite!" else "Removed Favorite", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, if (isFavorite) "Added to Favorites!" else "Removed from Favorites", Toast.LENGTH_SHORT).show()
                             }
                         },
                         colors = ButtonDefaults.buttonColors(
@@ -1426,7 +1426,7 @@ fun ImgDetailsViewerDialog(
                             viewModel.toggleVaultLock(photoItem.photo.id)
                             Toast.makeText(
                                 context,
-                                if (!isLocked) "Moved to Vault! Hidden from normal roll." else "Restored from Private Sandbox Vault",
+                                if (!isLocked) "Moved to Safe Vault!" else "Restored to main gallery",
                                 Toast.LENGTH_SHORT
                             ).show()
                         },
@@ -1443,7 +1443,7 @@ fun ImgDetailsViewerDialog(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(if (isLocked) "Locked Safely" else "Lock Vault", fontSize = 11.sp, color = Color.White)
+                        Text(if (isLocked) "Locked" else "Lock in Vault", fontSize = 11.sp, color = Color.White)
                     }
                 }
 

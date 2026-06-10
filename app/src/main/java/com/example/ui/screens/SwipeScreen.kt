@@ -96,13 +96,13 @@ fun SwipeScreen(
             ) {
                 Column {
                     Text(
-                        text = "Swipe Review",
+                        text = "Slide to Sort",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White
                     )
                     Text(
-                        text = "${photos.size} items matching filters",
+                        text = "${photos.size} photos found",
                         fontSize = 11.sp,
                         color = Color.LightGray.copy(alpha = 0.8f)
                     )
@@ -119,7 +119,7 @@ fun SwipeScreen(
                 ) {
                     Icon(
                         imageVector = if (filtersExpanded) Icons.Default.Close else Icons.Default.Tune,
-                        contentDescription = "Configure Filters"
+                        contentDescription = "Filters"
                     )
                 }
             }
@@ -196,7 +196,7 @@ fun SwipeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Overlay Filters & Sorting",
+                            text = "Sort and Filter",
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp,
                             color = Color.White
@@ -208,10 +208,10 @@ fun SwipeScreen(
                                 viewModel.setMediaTypeFilter("All")
                                 viewModel.setAiFilter("All")
                                 viewModel.setDateFilter("Any Time")
-                                Toast.makeText(context, "Filters reset successfully", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "Filters cleared", Toast.LENGTH_SHORT).show()
                             }
                         ) {
-                            Text("Reset All", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text("Clear filters", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                         }
                     }
 
@@ -219,7 +219,7 @@ fun SwipeScreen(
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { viewModel.updateSearchQuery(it) },
-                        placeholder = { Text("Search by faces, OCR context...", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp) },
+                        placeholder = { Text("Search by faces, text, words...", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp) },
                         leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = Color.LightGray) },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = Color.White,
@@ -234,7 +234,7 @@ fun SwipeScreen(
                     )
 
                     // 2. Category selection chips
-                    Text("Category Filter:", style = MaterialTheme.typography.labelSmall, color = Color.LightGray, fontWeight = FontWeight.Bold)
+                    Text("Photo Group:", style = MaterialTheme.typography.labelSmall, color = Color.LightGray, fontWeight = FontWeight.Bold)
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -257,12 +257,12 @@ fun SwipeScreen(
                     }
 
                     // 3. AI scoring / Quality criteria filters
-                    Text("AI Assessment Filters:", style = MaterialTheme.typography.labelSmall, color = Color.LightGray, fontWeight = FontWeight.Bold)
+                    Text("Photo Smart Check:", style = MaterialTheme.typography.labelSmall, color = Color.LightGray, fontWeight = FontWeight.Bold)
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        val aiFilters = listOf("All", "Blurry", "Dark/Light", "Screenshots", "With Faces", "OCR / Documents")
+                        val aiFilters = listOf("All", "Blurry", "Dark/Light", "Screenshots", "With Faces", "Documents with text")
                         aiFilters.forEach { fit ->
                             val isSelected = (aiFilter == fit)
                             Box(
@@ -302,7 +302,7 @@ fun SwipeScreen(
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("Apply Filters", fontWeight = FontWeight.Bold)
+                        Text("Show Photos", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -540,7 +540,7 @@ fun SwipeCard(
                         ) {
                             Icon(
                                 imageVector = if (metadataRequested) Icons.Default.Info else Icons.Outlined.Info,
-                                contentDescription = "Toggle Metadata Overlay"
+                                contentDescription = "Show photo details"
                             )
                         }
 
@@ -556,7 +556,7 @@ fun SwipeCard(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Lock,
-                                contentDescription = "Secure in Vault",
+                                contentDescription = "Move to Safe Folder",
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -603,7 +603,7 @@ fun SwipeCard(
                                 }
 
                                 Text(
-                                    text = "Folder: ${photo.category} • Size: ${photo.width}x${photo.height} • ${photo.mimeType}",
+                                    text = "Folder: ${photo.category} • Size: ${photo.width}x${photo.height}",
                                     color = Color.LightGray,
                                     fontSize = 11.sp
                                 )
@@ -617,7 +617,7 @@ fun SwipeCard(
                                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text("Sharpness Score", fontSize = 9.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                                            Text("Clear Image", fontSize = 9.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
                                             LinearProgressIndicator(
                                                 progress = ans.sharpnessScore,
                                                 color = Color(0xFF81C784),
@@ -626,7 +626,7 @@ fun SwipeCard(
                                             )
                                         }
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text("Blur Score", fontSize = 9.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                                            Text("Blurry", fontSize = 9.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
                                             LinearProgressIndicator(
                                                 progress = ans.blurScore,
                                                 color = Color(0xFFE57373),
@@ -647,7 +647,7 @@ fun SwipeCard(
                                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                                         ) {
                                             Icon(imageVector = Icons.Default.Face, contentDescription = null, tint = Color(0xFF81C784), modifier = Modifier.size(14.dp))
-                                            Text("Identity Cluster: ${ans.detectedFaceNames}", fontSize = 10.sp, color = Color(0xFFE8F5E9), fontWeight = FontWeight.Bold)
+                                            Text("People identified: ${ans.detectedFaceNames}", fontSize = 10.sp, color = Color(0xFFE8F5E9), fontWeight = FontWeight.Bold)
                                         }
                                     }
 
@@ -660,7 +660,7 @@ fun SwipeCard(
                                                 .background(Color(0xFF64B5F6).copy(alpha = 0.12f))
                                                 .padding(8.dp)
                                         ) {
-                                            Text("Extracted Text Info:", fontSize = 9.sp, color = Color(0xFF90CAF9), fontWeight = FontWeight.Bold)
+                                            Text("Text in photo:", fontSize = 9.sp, color = Color(0xFF90CAF9), fontWeight = FontWeight.Bold)
                                             Spacer(modifier = Modifier.height(2.dp))
                                             Text(ans.extractedText, fontSize = 10.sp, color = Color(0xFFE3F2FD), maxLines = 2)
                                         }
@@ -680,7 +680,7 @@ fun SwipeCard(
                                             .padding(8.dp)
                                     ) {
                                         Icon(imageVector = Icons.Default.Shield, contentDescription = null, tint = Color(0xFFF2B8B5), modifier = Modifier.size(16.dp))
-                                        Text("AI Safeguard Shield: ${memoryInfo.category} protection live", fontSize = 10.sp, color = Color(0xFFF2B8B5), fontWeight = FontWeight.Bold)
+                                        Text("Kept safe: ${memoryInfo.category}", fontSize = 10.sp, color = Color(0xFFF2B8B5), fontWeight = FontWeight.Bold)
                                     }
                                 }
                             }
@@ -750,7 +750,7 @@ fun SwipeCard(
                         .size(46.dp)
                         .testTag("swipe_action_undo")
                 ) {
-                    Icon(imageVector = Icons.Default.Undo, contentDescription = "Undo LastSwipe", modifier = Modifier.size(20.dp))
+                    Icon(imageVector = Icons.Default.Undo, contentDescription = "Undo last choice", modifier = Modifier.size(20.dp))
                 }
 
                 // 2. DELETE Action Button (Swipe Left link)
@@ -764,7 +764,7 @@ fun SwipeCard(
                         .size(56.dp)
                         .testTag("swipe_action_delete")
                 ) {
-                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Skip Delete", modifier = Modifier.size(26.dp))
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(26.dp))
                 }
 
                 // 3. FAVORITE Action Button (Swipe Up link)
@@ -778,7 +778,7 @@ fun SwipeCard(
                         .size(52.dp)
                         .testTag("swipe_action_favorite")
                 ) {
-                    Icon(imageVector = Icons.Default.Star, contentDescription = "Add Favorite", modifier = Modifier.size(22.dp))
+                    Icon(imageVector = Icons.Default.Star, contentDescription = "Favorite", modifier = Modifier.size(22.dp))
                 }
 
                 // 4. ARCHIVE Action Button (Swipe Down link)
@@ -792,7 +792,7 @@ fun SwipeCard(
                         .size(52.dp)
                         .testTag("swipe_action_archive")
                 ) {
-                    Icon(imageVector = Icons.Default.Archive, contentDescription = "Send Archive", modifier = Modifier.size(22.dp))
+                    Icon(imageVector = Icons.Default.Archive, contentDescription = "Move Out of View", modifier = Modifier.size(22.dp))
                 }
 
                 // 5. KEEP Action Button (Swipe Right link)
@@ -806,7 +806,7 @@ fun SwipeCard(
                         .size(56.dp)
                         .testTag("swipe_action_keep")
                 ) {
-                    Icon(imageVector = Icons.Default.Check, contentDescription = "Keep Asset", modifier = Modifier.size(26.dp))
+                    Icon(imageVector = Icons.Default.Check, contentDescription = "Keep", modifier = Modifier.size(26.dp))
                 }
             }
         }
@@ -887,7 +887,7 @@ fun EmptySwipeState() {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "No images or videos remaining in your queue. Scan for more items or browse your settings category options to enable more items.",
+                text = "You have checked all the photos! There are no pictures left to sort. You can find more pictures on the main screen.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.LightGray,
                 textAlign = TextAlign.Center,

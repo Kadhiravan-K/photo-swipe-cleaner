@@ -87,12 +87,12 @@ fun ReviewQueueScreen(
         ) {
             Column {
                 Text(
-                    text = "Pruning Queue",
+                    text = "Check Before Delete",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = "${reviewItems.size} items queued for deletion",
+                    text = "${reviewItems.size} photos waiting here",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -109,7 +109,7 @@ fun ReviewQueueScreen(
                 ) {
                     Icon(imageVector = Icons.Default.DeleteForever, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("Purge All", fontSize = 13.sp)
+                    Text("Delete All", fontSize = 13.sp)
                 }
             }
         }
@@ -138,7 +138,7 @@ fun ReviewQueueScreen(
                     modifier = Modifier.height(34.dp).testTag("select_all_toggle_button")
                 ) {
                     Text(
-                        text = if (isAllSelected) "Deselect All" else "Select All",
+                        text = if (isAllSelected) "Unselect All" else "Select All",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -150,7 +150,7 @@ fun ReviewQueueScreen(
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.height(34.dp)
                     ) {
-                        Text("Clear Selection", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Unselect", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 } else {
                     OutlinedButton(
@@ -160,7 +160,7 @@ fun ReviewQueueScreen(
                     ) {
                         Icon(imageVector = Icons.Default.KeyboardReturn, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Restore All", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Keep All", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -181,7 +181,7 @@ fun ReviewQueueScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "${selectedItems.size} selected for action",
+                    text = "${selectedItems.size} photo(s) selected",
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -202,7 +202,7 @@ fun ReviewQueueScreen(
                     ) {
                         Icon(imageVector = Icons.Default.KeyboardReturn, contentDescription = null, modifier = Modifier.size(13.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Restore", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("Keep", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
 
                     Button(
@@ -219,7 +219,7 @@ fun ReviewQueueScreen(
                     ) {
                         Icon(imageVector = Icons.Default.DeleteForever, contentDescription = null, modifier = Modifier.size(13.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Delete", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text("Trash", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -370,7 +370,7 @@ fun ReviewQueueItemCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.KeyboardReturn,
-                            contentDescription = "Restore Item",
+                            contentDescription = "Keep photo",
                             tint = Color(0xFFE6E1E5),
                             modifier = Modifier.size(16.dp)
                         )
@@ -384,7 +384,7 @@ fun ReviewQueueItemCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
-                            contentDescription = "Delete Item Permanently",
+                            contentDescription = "Delete forever",
                             tint = Color(0xFFF2B8B5),
                             modifier = Modifier.size(16.dp)
                         )
@@ -428,7 +428,7 @@ fun EmptyReviewQueueState() {
             }
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Deletion Queue is Empty",
+                text = "Nothing to Delete",
                 fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.titleMedium,
                 color = Color(0xFFE6E1E5),
@@ -436,7 +436,7 @@ fun EmptyReviewQueueState() {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Use swipe gestures (Swipe Left) or browse smart suggestions to prune photos you don't need.",
+                text = "Slide photos to the left or check suggestions to see pictures you might not need anymore.",
                 style = MaterialTheme.typography.bodySmall,
                 color = Color(0xFFCAC4D0),
                 textAlign = TextAlign.Center,

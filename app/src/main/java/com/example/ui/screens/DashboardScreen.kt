@@ -131,8 +131,8 @@ fun DashboardScreen(
                     icon = Icons.Default.Image,
                     iconColor = Color(0xFFD0BCFF),
                     value = "$remainingPhotos",
-                    label = "To Swipe",
-                    description = "Remaining in queue",
+                    label = "To Sort",
+                    description = "Waiting for you",
                     modifier = Modifier.fillMaxWidth().testTag("bento_to_swipe_card"),
                     onClick = { viewModel.setRoute("swipe") }
                 )
@@ -140,8 +140,8 @@ fun DashboardScreen(
                     icon = Icons.Default.DeleteSweep,
                     iconColor = Color(0xFFF2B8B5),
                     value = "$reviewCount",
-                    label = "To Delete",
-                    description = "Pending final review",
+                    label = "To Empty",
+                    description = "Waiting to be deleted",
                     modifier = Modifier.fillMaxWidth().testTag("bento_to_delete_card"),
                     onClick = { viewModel.setRoute("queue") }
                 )
@@ -157,8 +157,8 @@ fun DashboardScreen(
                 icon = Icons.Default.AutoAwesome,
                 iconColor = Color(0xFFD0BCFF),
                 value = "$reviewedCount",
-                label = "AI Scored",
-                description = "Scored locally",
+                label = "Local Check",
+                description = "Done on phone",
                 modifier = Modifier.weight(1f)
             )
             BentoCuratedCard(
@@ -177,8 +177,8 @@ fun DashboardScreen(
                 icon = Icons.Default.PhotoAlbum,
                 iconColor = Color(0xFFEFB8C8),
                 value = "$totalPhotos",
-                label = "Total Synced",
-                description = "Synced assets",
+                label = "Total Photos",
+                description = "Pictures loaded",
                 modifier = Modifier.weight(1f)
             )
             BentoGeminiStatusCard(
@@ -189,7 +189,7 @@ fun DashboardScreen(
 
         // --- AI Space Summaries & memory highlights ---
         Text(
-            text = "AI Smart Insights",
+            text = "Smart Insights",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(top = 8.dp)
@@ -311,7 +311,7 @@ fun DashboardBanner(
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = "AI ANALYSIS ACTIVE",
+                        text = "PHOTO CHECK LIVE",
                         color = Color(0xFFD0BCFF),
                         fontSize = 8.sp,
                         fontWeight = FontWeight.Bold,
@@ -322,7 +322,7 @@ fun DashboardBanner(
 
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Keep what matters. Clean what doesn't with smart local analytics and swiping.",
+                text = "Save your best pictures. Swipe to clean up blurry photos.",
                 color = Color.White.copy(alpha = 0.8f),
                 style = MaterialTheme.typography.bodySmall
             )
@@ -336,7 +336,7 @@ fun DashboardBanner(
                 ) {
                     CircularProgressIndicator(color = Color(0xFFD0BCFF), modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     Text(
-                        text = "Scanning & Analyzing...",
+                        text = "Checking your photos...",
                         color = Color.White,
                         style = MaterialTheme.typography.bodySmall,
                         fontWeight = FontWeight.SemiBold
@@ -378,7 +378,7 @@ fun DashboardBanner(
                     ) {
                         Icon(imageVector = Icons.Default.QueryStats, contentDescription = null, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("Score AI", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        Text("Check Photos", fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -422,7 +422,7 @@ fun GalleryHealthCard(
                 ) {
                     Icon(imageVector = Icons.Default.Info, contentDescription = null, tint = ringColor, modifier = Modifier.size(16.dp))
                 }
-                Text("AI Gallery Health Score", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("Gallery Cleanliness Score", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
             }
             Spacer(modifier = Modifier.height(14.dp))
             Row(
@@ -443,15 +443,15 @@ fun GalleryHealthCard(
                 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = if (score >= 85) "Excellent Shape!" else if (score >= 65) "Attention Recommended" else "Cleanup Highly Recommended",
+                        text = if (score >= 85) "Looking Great!" else if (score >= 65) "Needs a Little Tidy" else "Needs Tidying Up",
                         fontWeight = FontWeight.Bold,
                         color = Color.White,
                         fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = if (score >= 85) "Your gallery is compact and contains minimal duplicates or high-blur files."
-                               else "Raising score recommendation: Swipe and prune duplicates under candidates list. Saving potential is high.",
+                        text = if (score >= 85) "Your gallery is tidy and has very few extra or blurry pictures!"
+                               else "How to get a higher score: Check your suggested deletions or swipe left on pictures you don't need.",
                         fontSize = 11.sp,
                         color = Color(0xFFCAC4D0),
                         lineHeight = 15.sp
@@ -469,10 +469,10 @@ fun GalleryHealthCard(
                     .padding(10.dp)
             ) {
                 Column {
-                    Text("💡 SMART CLEANUP REMINDER", fontWeight = FontWeight.Bold, fontSize = 9.sp, color = Color(0xFFD0BCFF), letterSpacing = 1.sp)
+                    Text("💡 TIDY UP TIP", fontWeight = FontWeight.Bold, fontSize = 9.sp, color = Color(0xFFD0BCFF), letterSpacing = 1.sp)
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "You have $remaining photos waiting to be swiped, and similar duplicates clusters are taking up storage. Clean them to raise your gallery score!",
+                        text = "You have $remaining photos to sort, and some look almost the same. Clean them up to keep things neat!",
                         fontSize = 11.sp,
                         color = Color.White.copy(alpha = 0.9f)
                     )
@@ -514,14 +514,14 @@ fun StorageForecastCard(
                 ) {
                     Icon(imageVector = Icons.Default.QueryStats, contentDescription = null, tint = Color(0xFF81C784), modifier = Modifier.size(16.dp))
                 }
-                Text("AI Storage Forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                Text("Space Forecast", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
             }
             Spacer(modifier = Modifier.height(14.dp))
             
-            Text("CURRENT SPACE USAGE", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
+            Text("SPACE USED", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
             Spacer(modifier = Modifier.height(4.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-                Text(String.format("%.1f GB Used of 128 GB", currentUsage), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(String.format("%.1f GB Used out of 128 GB", currentUsage), fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Text(String.format("%.1f GB Free", remainingSpace), fontSize = 11.sp, color = Color(0xFF81C784))
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -538,16 +538,16 @@ fun StorageForecastCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Expected Storage Full Date:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
+                    Text("When your space might run out:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text("In $predictionDays days", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.ExtraBold, color = Color(0xFFFFD54F))
-                    Text("Based on gallery rates", fontSize = 10.sp, color = Color(0xFFCAC4D0))
+                    Text("In about $predictionDays days", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.ExtraBold, color = Color(0xFFFFD54F))
+                    Text("If you keep saving photos at this speed", fontSize = 10.sp, color = Color(0xFFCAC4D0))
                 }
                 Column(modifier = Modifier.weight(1f)) {
-                    Text("Potential Space Savings:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
+                    Text("How much space you can save:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
                     Spacer(modifier = Modifier.height(2.dp))
-                    Text("Recover 3.8 GB", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.ExtraBold, color = Color(0xFF81C784))
-                    Text("By clearing bloated duplicates", fontSize = 10.sp, color = Color(0xFFCAC4D0))
+                    Text("Free up 3.8 GB", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.ExtraBold, color = Color(0xFF81C784))
+                    Text("By deleting extra copies", fontSize = 10.sp, color = Color(0xFFCAC4D0))
                 }
             }
         }
@@ -584,7 +584,7 @@ fun TravelStoryCard(
                     ) {
                         Icon(imageVector = Icons.Default.PhotoAlbum, contentDescription = null, tint = Color(0xFFD0BCFF), modifier = Modifier.size(16.dp))
                     }
-                    Text("AI Travel Story Generator", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Travel Story Generator", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
                 }
                 Button(
                     onClick = { showPostcard = !showPostcard },
@@ -592,12 +592,12 @@ fun TravelStoryCard(
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.height(28.dp)
                 ) {
-                    Text(if (showPostcard) "Close Story" else "Compose Postcard", fontSize = 10.sp)
+                    Text(if (showPostcard) "Close Story" else "Make Postcard", fontSize = 10.sp)
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                "Detects photo geographic Clusters and chronological travel periods dynamically.", 
+                "Groups your trip photos together of fun places you've visited.", 
                 fontSize = 11.sp, 
                 color = Color(0xFFCAC4D0)
             )
@@ -618,14 +618,14 @@ fun TravelStoryCard(
                 ) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Column {
-                            Text("SUMMER LAKE SHORE EXCURSION", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFD0BCFF))
-                            Text("Travel Period group", fontSize = 10.sp, color = Color(0xFFCAC4D0))
+                            Text("SUMMER LAKE TRIP", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFFD0BCFF))
+                            Text("Trip Group", fontSize = 10.sp, color = Color(0xFFCAC4D0))
                         }
                         Text("📮 POSTCARD", fontSize = 9.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFFD0BCFF).copy(alpha = 0.5f))
                     }
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        "AI Summary: Group photos captured during a 3-day active travel block. Features waterfront landscapes, nature trails, group family meals. Highlights score high.",
+                        "Summary: Photos from your 3-day trip. Includes lake views, walking paths, and dinners with family.",
                         fontSize = 12.sp,
                         color = Color.White,
                         lineHeight = 18.sp
@@ -633,12 +633,12 @@ fun TravelStoryCard(
                     Spacer(modifier = Modifier.height(12.dp))
                     Row {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("CAPTURED ASSETS", fontSize = 10.sp, color = Color(0xFFCAC4D0))
-                            Text("${(totalPhotos / 4).coerceAtLeast(3)} Memories", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
+                            Text("PHOTOS SAVED", fontSize = 10.sp, color = Color(0xFFCAC4D0))
+                            Text("${(totalPhotos / 4).coerceAtLeast(3)} Photos", fontWeight = FontWeight.Bold, color = Color.White, fontSize = 12.sp)
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("BEST MOMENT CHOSEN", fontSize = 10.sp, color = Color(0xFFCAC4D0))
-                            Text("Sunset Lakeside Portrait", fontWeight = FontWeight.Bold, color = Color(0xFF81C784), fontSize = 12.sp)
+                            Text("BEST PHOTO", fontSize = 10.sp, color = Color(0xFFCAC4D0))
+                            Text("Sunset by the Lake", fontWeight = FontWeight.Bold, color = Color(0xFF81C784), fontSize = 12.sp)
                         }
                     }
                 }
@@ -678,7 +678,7 @@ fun GalleryWrappedCard(
                     ) {
                         Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFFFFD8E4), modifier = Modifier.size(16.dp))
                     }
-                    Text("AI Gallery Wrapped", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("Gallery Wrapped", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White)
                 }
                 Button(
                     onClick = { showWrapped = !showWrapped },
@@ -686,12 +686,12 @@ fun GalleryWrappedCard(
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.height(28.dp)
                 ) {
-                    Text(if (showWrapped) "Hide Insights" else "Reveal Wrapped", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text(if (showWrapped) "Hide Wrapped" else "See Wrapped", fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                "Compiles monthly gallery achievements, storage trends, and highlights.", 
+                "Shows your monthly memory count and how much space you saved.", 
                 fontSize = 11.sp, 
                 color = Color(0xFFCAC4D0)
             )
@@ -710,10 +710,10 @@ fun GalleryWrappedCard(
                         .border(1.dp, Color(0xFFFFD8E4).copy(alpha = 0.3f), RoundedCornerShape(16.dp))
                         .padding(16.dp)
                 ) {
-                    Text("YOUR MONTH IN FEATS AND WRAPPED", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD8E4), letterSpacing = 1.sp)
+                    Text("YOUR MONTH IN SUMMARY", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color(0xFFFFD8E4), letterSpacing = 1.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "🎉 You swept like a pro! Keeping your memories organized by swiping dark downloads and duplicate selfies.",
+                        text = "🎉 You did a great job! You kept your memories clean and organized!",
                         fontSize = 13.sp,
                         color = Color.White,
                         lineHeight = 18.sp,
@@ -722,12 +722,12 @@ fun GalleryWrappedCard(
                     Spacer(modifier = Modifier.height(14.dp))
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("ACTIVE CATEGORY", fontSize = 9.sp, color = Color(0xFFFFD8E4))
-                            Text("Camera Photos", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.White)
+                            Text("FAVORITE FOLDER", fontSize = 9.sp, color = Color(0xFFFFD8E4))
+                            Text("Camera", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.White)
                         }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("RECOVERED SPACE", fontSize = 9.sp, color = Color(0xFFFFD8E4))
-                            val bytesText = if (recoveredBytes > 0) "Saved Space!" else "Tidy!"
+                            Text("SPACE SAVED", fontSize = 9.sp, color = Color(0xFFFFD8E4))
+                            val bytesText = if (recoveredBytes > 0) "Space Saved!" else "Clean!"
                             Text(bytesText, fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color(0xFF81C784))
                         }
                     }
@@ -777,7 +777,7 @@ fun BentoRecoveredCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "SAVED STORAGE",
+                        text = "SPACE SAVED",
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color(0xFFD0BCFF),
@@ -835,7 +835,7 @@ fun BentoRecoveredCard(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "$deletedCount items purged successfully",
+                    text = "$deletedCount photos deleted",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFFEADDFF).copy(alpha = 0.8f),
                     maxLines = 1
@@ -959,7 +959,7 @@ fun BentoCuratedCard(
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "CURATED METER",
+                    text = "SWIPE SCORE",
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFCAC4D0),
@@ -974,7 +974,7 @@ fun BentoCuratedCard(
                         color = Color(0xFFEFB8C8)
                     )
                     Text(
-                        text = "$curatedCount / $totalPhotos sorted",
+                        text = "$curatedCount out of $totalPhotos sorted",
                         fontSize = 8.sp,
                         color = Color(0xFFCAC4D0).copy(alpha = 0.7f),
                         maxLines = 1
@@ -1010,8 +1010,8 @@ fun BentoGeminiStatusCard(
     modifier: Modifier = Modifier
 ) {
     val statusColor = if (isValid) Color(0xFFD0BCFF) else Color(0xFFF2B8B5)
-    val statusText = if (isValid) "CONNECTED" else "SETUP REQ"
-    val subtitleText = if (isValid) "Gemini Live insights" else "Unlock monthly summaries"
+    val statusText = if (isValid) "CONNECTED" else "NOT READY"
+    val subtitleText = if (isValid) "Smart insights ready" else "Turn on to see summaries"
 
     Surface(
         modifier = modifier.height(90.dp),
@@ -1035,7 +1035,7 @@ fun BentoGeminiStatusCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "GEMINI ENGINE",
+                    text = "SMART POWER",
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFCAC4D0),
@@ -1105,14 +1105,14 @@ fun OutlinedCardWithNoGeminiKey() {
             }
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "AI Integration Inactive",
+                    text = "Extra helpers not connected",
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     color = Color(0xFFE6E1E5)
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Configure your GEMINI_API_KEY inside the AI Studio Secrets panel to enable monthly memories highlights, custom cleanup tips and best shot suggestion tools.",
+                    text = "To see monthly summaries of your favorite photos and get customized tidy-up tips, please enter your GEMINI_API_KEY in the Secrets panel.",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFFCAC4D0),
                     fontSize = 11.sp,
@@ -1162,7 +1162,7 @@ fun MemoryHighlightsCard(
                         )
                     }
                     Text(
-                        text = "AI Memory Highlights",
+                        text = "Memory Highlights",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFE6E1E5)
@@ -1189,19 +1189,19 @@ fun MemoryHighlightsCard(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Most Photographed topic:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
+                        Text("Your favorite topic:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(aiHighlights.mostPhotographed, style = MaterialTheme.typography.bodySmall, color = Color(0xFFD0BCFF), fontWeight = FontWeight.Bold)
                     }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Est. Recovered trend:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
+                        Text("Est. Space trend:", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFCAC4D0))
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(aiHighlights.storageTrend, style = MaterialTheme.typography.bodySmall, color = Color(0xFFEFB8C8), fontWeight = FontWeight.Bold)
                     }
                 }
             } else {
                 Text(
-                    text = "Let Gemini analyze your local photo analytics metadata and compile an elegant monthly highlights summary for you.",
+                    text = "Let your phone find your highlights and write a monthly summary for you.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = Color(0xFFCAC4D0),
                     fontSize = 12.sp,
@@ -1215,7 +1215,7 @@ fun MemoryHighlightsCard(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD0BCFF), contentColor = Color(0xFF381E72)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("Generate Monthly Highlights", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Text("Make Monthly Highlights", fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1261,7 +1261,7 @@ fun CleanupActionableTipsCard(
                         )
                     }
                     Text(
-                        text = "AI Smart Cleanup Tips",
+                        text = "Smart Tidy-up Tips",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFE6E1E5)
@@ -1295,7 +1295,7 @@ fun CleanupActionableTipsCard(
                 }
             } else {
                 Text(
-                    text = "Insights are ready. Click the refresh button to generate customized smart advice on which areas of your gallery can be pruned.",
+                    text = "Tips are ready! Tap the reload button to get some expert advice on keeping your gallery organized and tidy.",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFFCAC4D0),
                     fontSize = 12.sp,
