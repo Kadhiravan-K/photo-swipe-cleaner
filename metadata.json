@@ -1,0 +1,6 @@
+{
+  "name": "PhotoFlow",
+  "description": "Clean and organize your gallery with swipe gestures and AI-powered local analysis and Gemini highlights.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
