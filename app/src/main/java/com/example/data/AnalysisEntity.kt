@@ -11,6 +11,9 @@ data class AnalysisEntity(
     val brightnessScore: Float,
     val duplicateSimilarityHash: String,
     val screenshotProbabilityScore: Float,
+    val detectedFacesCount: Int = 0,
+    val detectedFaceNames: String = "",
+    val extractedText: String = "",
     val isAnalyzed: Boolean = false,
     val analysisTimestamp: Long = System.currentTimeMillis()
 )

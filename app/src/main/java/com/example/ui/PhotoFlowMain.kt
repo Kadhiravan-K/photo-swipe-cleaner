@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -69,6 +71,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.example.ui.screens.DashboardScreen
+import com.example.ui.screens.ChatScreen
 import com.example.ui.screens.ReviewQueueScreen
 import com.example.ui.screens.SmartCleanupScreen
 import com.example.ui.screens.SwipeScreen
@@ -83,6 +86,10 @@ fun PhotoFlowMain(
     val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
     val remainingPhotos by viewModel.remainingPhotosCount.collectAsStateWithLifecycle()
     val deletedCount by viewModel.deletedCandidatesCount.collectAsStateWithLifecycle()
+
+    val mediaTypeFilter by viewModel.mediaTypeFilter.collectAsStateWithLifecycle()
+    val aiFilter by viewModel.aiFilter.collectAsStateWithLifecycle()
+    val dateFilter by viewModel.dateFilter.collectAsStateWithLifecycle()
 
     // 1. Setup multi-permission handling for different OS levels (Read Photos / Videos)
     val mediaPermissions = remember {
@@ -108,50 +115,6 @@ fun PhotoFlowMain(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding(),
-        topBar = {
-            if (permissionsState.allPermissionsGranted && activeRoute != "dashboard") {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surface)
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    // Search layout standard bar
-                    SearchBar(
-                        query = searchQuery,
-                        onQueryChange = { viewModel.updateSearchQuery(it) },
-                        onSearch = { },
-                        active = false,
-                        onActiveChange = { },
-                        placeholder = { Text("Search photo filename or dates...") },
-                        leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null) },
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { viewModel.updateSearchQuery("") }) {
-                                    Icon(imageVector = Icons.Default.Clear, contentDescription = "Clear Search")
-                                }
-                            }
-                        },
-                        colors = SearchBarDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(54.dp)
-                            .testTag("app_search_bar")
-                    ) {}
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Horizontal scrolling chips for smart category buckets
-                    CategoryFilterRow(
-                        selectedCategory = selectedCategory,
-                        onCategorySelect = { viewModel.selectCategory(it) }
-                    )
-                }
-            }
-        },
         bottomBar = {
             AppBottomNavigation(
                 activeRoute = activeRoute,
@@ -178,6 +141,9 @@ fun PhotoFlowMain(
                     "dashboard" -> {
                         DashboardScreen(viewModel = viewModel)
                     }
+                    "chat" -> {
+                        ChatScreen(viewModel = viewModel)
+                    }
                     "swipe" -> {
                         SwipeScreen(viewModel = viewModel)
                     }
@@ -186,6 +152,9 @@ fun PhotoFlowMain(
                     }
                     "queue" -> {
                         ReviewQueueScreen(viewModel = viewModel)
+                    }
+                    "settings" -> {
+                        com.example.ui.screens.SettingsScreen(viewModel = viewModel)
                     }
                 }
             }
@@ -267,6 +236,14 @@ fun AppBottomNavigation(
         )
 
         NavigationBarItem(
+            selected = activeRoute == "chat",
+            onClick = { onNavigate("chat") },
+            icon = { Icon(imageVector = Icons.Default.AutoAwesome, contentDescription = null) },
+            label = { Text("AI Chat", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+            modifier = Modifier.testTag("nav_chat")
+        )
+
+        NavigationBarItem(
             selected = activeRoute == "swipe",
             onClick = { onNavigate("swipe") },
             icon = {
@@ -324,6 +301,14 @@ fun AppBottomNavigation(
             label = { Text("Queue", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
             modifier = Modifier.testTag("nav_queue")
         )
+
+        NavigationBarItem(
+            selected = activeRoute == "settings",
+            onClick = { onNavigate("settings") },
+            icon = { Icon(imageVector = Icons.Default.Settings, contentDescription = null) },
+            label = { Text("Settings", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+            modifier = Modifier.testTag("nav_settings")
+        )
     }
 }
 
@@ -379,5 +364,126 @@ fun PermissionsRequestScreen(
                 Text("Grant Secure Access", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             }
         }
+    }
+}
+
+@Composable
+fun QuickFiltersRow(
+    mediaType: String,
+    aiCategory: String,
+    dateRange: String,
+    onMediaTypeSelect: (String) -> Unit,
+    onAiCategorySelect: (String) -> Unit,
+    onDateRangeSelect: (String) -> Unit
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(end = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        // Media types
+        item {
+            FilterGroupTitle("Mime")
+        }
+        val mediaTypes = listOf("All", "Images", "Videos")
+        items(mediaTypes) { type ->
+            val isSelected = mediaType == type
+            FilterChipItem(
+                text = type,
+                isSelected = isSelected,
+                onClick = { onMediaTypeSelect(type) },
+                testTag = "media_type_chip_$type"
+            )
+        }
+
+        // AI Quality/Categories
+        item {
+            FilterGroupTitle("AI & Quality")
+        }
+        val aiCategories = listOf("All", "Blurry", "Dark/Light", "Screenshots", "With Faces", "OCR / Documents")
+        items(aiCategories) { cat ->
+            val isSelected = aiCategory == cat
+            val displayTitle = when (cat) {
+                "Dark/Light" -> "Exp. Issues"
+                "OCR / Documents" -> "Docs & OCR"
+                else -> cat
+            }
+            FilterChipItem(
+                text = displayTitle,
+                isSelected = isSelected,
+                onClick = { onAiCategorySelect(cat) },
+                testTag = "ai_category_chip_$cat"
+            )
+        }
+
+        // Dates
+        item {
+            FilterGroupTitle("Time")
+        }
+        val dateRanges = listOf("Any Time", "Today", "Last 7 Days", "Last 30 Days")
+        items(dateRanges) { range ->
+            val isSelected = dateRange == range
+            FilterChipItem(
+                text = range,
+                isSelected = isSelected,
+                onClick = { onDateRangeSelect(range) },
+                testTag = "date_range_chip_$range"
+            )
+        }
+    }
+}
+
+@Composable
+fun FilterGroupTitle(text: String) {
+    Box(
+        modifier = Modifier
+            .padding(vertical = 4.dp)
+            .padding(end = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text.uppercase(),
+            fontSize = 9.sp,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+            letterSpacing = 1.sp
+        )
+    }
+}
+
+@Composable
+fun FilterChipItem(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    testTag: String
+) {
+    val chipColor = if (isSelected) MaterialTheme.colorScheme.primaryContainer
+                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+    val textColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer
+                    else MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary
+                      else Color.Transparent
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(chipColor)
+            .then(
+                if (borderColor != Color.Transparent) {
+                    Modifier.border(1.dp, borderColor, RoundedCornerShape(12.dp))
+                } else Modifier
+            )
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .testTag(testTag)
+    ) {
+        Text(
+            text = text,
+            color = textColor,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }

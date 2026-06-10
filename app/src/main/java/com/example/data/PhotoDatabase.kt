@@ -11,7 +11,7 @@ import androidx.room.RoomDatabase
         AnalysisEntity::class,
         MemoryHighlightEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 abstract class PhotoDatabase : RoomDatabase() {

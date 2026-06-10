@@ -1,57 +1,31 @@
 package com.example.ui.screens
 
+import android.widget.Toast
+import androidx.compose.animation.*
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.key
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Archive
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Restore
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.FilledTonalButton
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -69,283 +43,770 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.data.PhotoEntity
+import com.example.data.PhotoWithAnalysis
 import com.example.repository.SwipeAction
 import com.example.ui.PhotoFlowViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SwipeScreen(
     viewModel: PhotoFlowViewModel,
     modifier: Modifier = Modifier
 ) {
     val photos by viewModel.galleryPhotos.collectAsStateWithLifecycle()
+    val swipeLeftEnabled by viewModel.swipeLeftEnabled.collectAsStateWithLifecycle()
+    val swipeRightEnabled by viewModel.swipeRightEnabled.collectAsStateWithLifecycle()
+    val swipeUpEnabled by viewModel.swipeUpEnabled.collectAsStateWithLifecycle()
+    val swipeDownEnabled by viewModel.swipeDownEnabled.collectAsStateWithLifecycle()
 
-    Column(
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val selectedCategory by viewModel.selectedCategory.collectAsStateWithLifecycle()
+    val mediaTypeFilter by viewModel.mediaTypeFilter.collectAsStateWithLifecycle()
+    val aiFilter by viewModel.aiFilter.collectAsStateWithLifecycle()
+    val dateFilter by viewModel.dateFilter.collectAsStateWithLifecycle()
+
+    val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    // Minimalist Expandable Filter Panel state
+    var filtersExpanded by remember { mutableStateOf(false) }
+
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(Color.Black) // Ultimate photo-first focus format (pure dark theme)
     ) {
-        // Mode Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        // Core Card Stack & Photo View Area (Edge-to-Edge)
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Column {
-                Text(
-                    text = "Swipe Cleaner",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "${photos.size} items in queue",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            FilledTonalButton(
-                onClick = { viewModel.undoLastAction() },
-                modifier = Modifier.testTag("undo_action_button")
+            // Screen Small Header
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = Icons.Default.Restore,
-                    contentDescription = "Undo Action",
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Undo")
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            if (photos.isEmpty()) {
-                EmptySwipeState()
-            } else {
-                // Stack cards: show current top photo and the next one underneath
-                val topPhoto = photos.firstOrNull()
-                val nextPhoto = if (photos.size > 1) photos[1] else null
-
-                // Underneath Card
-                nextPhoto?.let { photo ->
-                    SwipeCardBackground(photo = photo)
+                Column {
+                    Text(
+                        text = "Swipe Review",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = "${photos.size} items matching filters",
+                        fontSize = 11.sp,
+                        color = Color.LightGray.copy(alpha = 0.8f)
+                    )
                 }
 
-                // Interactive Top Card
-                topPhoto?.let { photo ->
-                    key(photo.id) {
+                // Collapsible Filter Trigger button (Distraction-free)
+                IconButton(
+                    onClick = { filtersExpanded = !filtersExpanded },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = if (filtersExpanded) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.12f),
+                        contentColor = if (filtersExpanded) MaterialTheme.colorScheme.onPrimary else Color.White
+                    ),
+                    modifier = Modifier.testTag("expand_filters_fab")
+                ) {
+                    Icon(
+                        imageVector = if (filtersExpanded) Icons.Default.Close else Icons.Default.Tune,
+                        contentDescription = "Configure Filters"
+                    )
+                }
+            }
+
+            // Interactive Card Stack
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                if (photos.isEmpty()) {
+                    EmptySwipeState()
+                } else {
+                    val topPhoto = photos.first()
+                    val nextPhoto = if (photos.size > 1) photos[1] else null
+
+                    // Background next card
+                    nextPhoto?.let {
+                        SwipeCardBackground(photo = it.photo)
+                    }
+
+                    // Foreground interactive card
+                    val topPhotoId = topPhoto.photo.id
+                    androidx.compose.runtime.key(topPhotoId) {
                         SwipeCard(
-                            photo = photo,
+                            item = topPhoto,
+                            viewModel = viewModel,
+                            swipeLeftEnabled = swipeLeftEnabled,
+                            swipeRightEnabled = swipeRightEnabled,
+                            swipeUpEnabled = swipeUpEnabled,
+                            swipeDownEnabled = swipeDownEnabled,
                             onSwipe = { action ->
-                                viewModel.swipeAction(photo.id, action)
+                                viewModel.swipeAction(topPhoto.photo.id, action)
                             }
                         )
                     }
                 }
             }
+
+            // Margin space
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        // Minimalist Floating Expandable Filters overlay (Smooth animation)
+        androidx.compose.animation.AnimatedVisibility(
+            visible = filtersExpanded,
+            enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+            exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(top = 56.dp)
+                .padding(horizontal = 16.dp)
+                .fillMaxWidth(0.95f)
+        ) {
+            Surface(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(30.dp))
+                    .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(30.dp)),
+                color = Color(0xFF2B2930),
+                tonalElevation = 8.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .padding(20.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Overlay Filters & Sorting",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Color.White
+                        )
+                        TextButton(
+                            onClick = {
+                                viewModel.updateSearchQuery("")
+                                viewModel.selectCategory(null)
+                                viewModel.setMediaTypeFilter("All")
+                                viewModel.setAiFilter("All")
+                                viewModel.setDateFilter("Any Time")
+                                Toast.makeText(context, "Filters reset successfully", Toast.LENGTH_SHORT).show()
+                            }
+                        ) {
+                            Text("Reset All", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
 
-        // Gesture guide legend
-        GestureGuideLegend()
+                    // 1. Natural Language Search Option
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { viewModel.updateSearchQuery(it) },
+                        placeholder = { Text("Search by faces, OCR context...", color = Color.White.copy(alpha = 0.5f), fontSize = 12.sp) },
+                        leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = null, tint = Color.LightGray) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.2f)
+                        ),
+                        singleLine = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                    )
+
+                    // 2. Category selection chips
+                    Text("Category Filter:", style = MaterialTheme.typography.labelSmall, color = Color.LightGray, fontWeight = FontWeight.Bold)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        val categories = listOf("All", "Camera Photos", "Screenshots", "Downloads", "WhatsApp Images", "Videos", "Favorites")
+                        categories.forEach { cat ->
+                            val isSelected = (selectedCategory == null && cat == "All") || (selectedCategory == cat)
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.08f))
+                                    .clickable {
+                                        viewModel.selectCategory(if (cat == "All") null else cat)
+                                    }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(cat, fontSize = 10.sp, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    // 3. AI scoring / Quality criteria filters
+                    Text("AI Assessment Filters:", style = MaterialTheme.typography.labelSmall, color = Color.LightGray, fontWeight = FontWeight.Bold)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        val aiFilters = listOf("All", "Blurry", "Dark/Light", "Screenshots", "With Faces", "OCR / Documents")
+                        aiFilters.forEach { fit ->
+                            val isSelected = (aiFilter == fit)
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.08f))
+                                    .clickable { viewModel.setAiFilter(fit) }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(fit, fontSize = 10.sp, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    // 4. Date ranges
+                    Text("Date Range:", style = MaterialTheme.typography.labelSmall, color = Color.LightGray, fontWeight = FontWeight.Bold)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        val dates = listOf("Any Time", "Today", "Last 7 Days", "Last 30 Days")
+                        dates.forEach { dt ->
+                            val isSelected = (dateFilter == dt)
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.08f))
+                                    .clickable { viewModel.setDateFilter(dt) }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                            ) {
+                                Text(dt, fontSize = 10.sp, color = if (isSelected) MaterialTheme.colorScheme.onPrimary else Color.White, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    Button(
+                        onClick = { filtersExpanded = false },
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Apply Filters", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
     }
 }
 
 @Composable
 fun SwipeCard(
-    photo: PhotoEntity,
+    item: PhotoWithAnalysis,
+    viewModel: PhotoFlowViewModel,
+    swipeLeftEnabled: Boolean = true,
+    swipeRightEnabled: Boolean = true,
+    swipeUpEnabled: Boolean = true,
+    swipeDownEnabled: Boolean = true,
     onSwipe: (SwipeAction) -> Unit
 ) {
+    val photo = item.photo
     val coroutineScope = rememberCoroutineScope()
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
 
-    val dragThresholdX = 120.dp
-    val dragThresholdY = 120.dp
+    val dragThresholdX = 130.dp
+    val dragThresholdY = 130.dp
 
-    // Animatable offsets for smooth swipe transitions
-    val offsetX = remember { Animatable(0f) }
-    val offsetY = remember { Animatable(0f) }
+    // Animatable offsets for card position
+    val offsetX = remember(photo.id) { Animatable(0f) }
+    val offsetY = remember(photo.id) { Animatable(0f) }
 
+    var dragJobX by remember { mutableStateOf<Job?>(null) }
+    var dragJobY by remember { mutableStateOf<Job?>(null) }
     var swipeOverlayState by remember { mutableStateOf<SwipeAction?>(null) }
 
-    val rotationFraction = (offsetX.value / 300f).coerceIn(-1f, 1f)
-    val cardRotation = rotationFraction * 15f
+    // ZOOM & PAN logic states (Pinch-to-zoom, pan, double-tap zoom)
+    var zoomScale by remember(photo.id) { mutableStateOf(1f) }
+    var zoomOffset by remember(photo.id) { mutableStateOf(Offset.Zero) }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .pointerInput(photo.id) {
-                detectDragGestures(
-                    onDragEnd = {
-                        val currentX = offsetX.value
-                        val currentY = offsetY.value
-                        val density = this.density
+    val rotationFraction = (offsetX.value / 350f).coerceIn(-1f, 1f)
+    val cardRotation = rotationFraction * 12f
 
-                        coroutineScope.launch {
-                            val dragThresholdXPx = dragThresholdX.toPx()
-                            val dragThresholdYPx = dragThresholdY.toPx()
+    // Metadata overlay request expand/collapse state (Hidden by default for photo-first)
+    var metadataRequested by remember(photo.id) { mutableStateOf(false) }
 
-                            when {
-                                currentX > dragThresholdXPx -> {
-                                    // Swipe Right (Keep)
-                                    offsetX.animateTo(screenWidth.toPx() * 1.5f, spring())
-                                    onSwipe(SwipeAction.KEEP)
-                                }
-                                currentX < -dragThresholdXPx -> {
-                                    // Swipe Left (Delete)
-                                    offsetX.animateTo(-screenWidth.toPx() * 1.5f, spring())
-                                    onSwipe(SwipeAction.DELETE)
-                                }
-                                currentY > dragThresholdYPx -> {
-                                    // Swipe Down (Archive)
-                                    offsetY.animateTo(screenHeight.toPx() * 1.5f, spring())
-                                    onSwipe(SwipeAction.ARCHIVE)
-                                }
-                                currentY < -dragThresholdYPx -> {
-                                    // Swipe Up (Favorite)
-                                    offsetY.animateTo(-screenHeight.toPx() * 1.5f, spring())
-                                    onSwipe(SwipeAction.FAVORITE)
-                                }
-                                else -> {
-                                    // Snap back
-                                    launch { offsetX.animateTo(0f, spring()) }
-                                    launch { offsetY.animateTo(0f, spring()) }
-                                }
-                            }
-                            swipeOverlayState = null
-                        }
-                    },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        coroutineScope.launch {
-                            offsetX.snapTo(offsetX.value + dragAmount.x)
-                            offsetY.snapTo(offsetY.value + dragAmount.y)
+    val transformState = rememberTransformableState { zoomChange, panChange, _ ->
+        zoomScale = (zoomScale * zoomChange).coerceIn(1f, 5f)
+        if (zoomScale > 1f) {
+            zoomOffset += panChange
+        } else {
+            zoomOffset = Offset.Zero
+        }
+    }
 
-                            // Update overlays dynamically
-                            swipeOverlayState = when {
-                                abs(offsetX.value) > abs(offsetY.value) -> {
-                                    if (offsetX.value > 0) SwipeAction.KEEP else SwipeAction.DELETE
-                                }
-                                else -> {
-                                    if (offsetY.value > 0) SwipeAction.ARCHIVE else SwipeAction.FAVORITE
-                                }
-                            }
-                        }
-                    }
-                )
+    // Direct actions link
+    val triggerActionAnimated: (SwipeAction) -> Unit = { action ->
+        coroutineScope.launch {
+            when (action) {
+                SwipeAction.KEEP -> {
+                    offsetX.animateTo(screenWidth.value * 2.5f, spring())
+                    onSwipe(SwipeAction.KEEP)
+                }
+                SwipeAction.DELETE -> {
+                    offsetX.animateTo(-screenWidth.value * 2.5f, spring())
+                    onSwipe(SwipeAction.DELETE)
+                }
+                SwipeAction.ARCHIVE -> {
+                    offsetY.animateTo(screenHeight.value * 2.5f, spring())
+                    onSwipe(SwipeAction.ARCHIVE)
+                }
+                SwipeAction.FAVORITE -> {
+                    offsetY.animateTo(-screenHeight.value * 2.5f, spring())
+                    onSwipe(SwipeAction.FAVORITE)
+                }
             }
-            .offset { IntOffset(offsetX.value.roundToInt(), offsetY.value.roundToInt()) }
-            .rotate(cardRotation)
-            .graphicsLayer {
-                val scale = (1f - abs(rotationFraction) * 0.05f).coerceIn(0.95f, 1f)
-                scaleX = scale
-                scaleY = scale
-            }
+        }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Card(
+        // Upper Card View
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .border(1.dp, Color(0xFF938F99).copy(alpha = 0.25f), RoundedCornerShape(20.dp))
-                .testTag("swipe_photo_card"),
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                // Photo content
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(photo.uriString)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = photo.fileName,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                .weight(1f)
+                .fillMaxWidth()
+                .pointerInput(photo.id) {
+                    detectDragGestures(
+                        onDragEnd = {
+                            if (zoomScale == 1f) {
+                                dragJobX?.cancel()
+                                dragJobY?.cancel()
+                                val currentX = offsetX.value
+                                val currentY = offsetY.value
 
-                // Visual gradient dark cover at bottom
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .fillMaxHeight(0.4f)
-                        .align(Alignment.BottomCenter)
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.82f))
-                            )
-                        )
-                )
+                                coroutineScope.launch {
+                                    val thresholdXPx = dragThresholdX.toPx()
+                                    val thresholdYPx = dragThresholdY.toPx()
 
-                // Photo overlay metadatas
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomStart)
-                        .padding(24.dp)
-                ) {
-                    Text(
-                        text = photo.fileName,
-                        color = Color.White,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "${photo.category} • ${photo.mimeType.substringAfter('/')}",
-                        color = Color.White.copy(alpha = 0.8f),
-                        style = MaterialTheme.typography.bodyMedium
+                                    when {
+                                        currentX > thresholdXPx && swipeRightEnabled -> {
+                                            offsetX.animateTo(screenWidth.toPx() * 1.5f, spring())
+                                            onSwipe(SwipeAction.KEEP)
+                                        }
+                                        currentX < -thresholdXPx && swipeLeftEnabled -> {
+                                            offsetX.animateTo(-screenWidth.toPx() * 1.5f, spring())
+                                            onSwipe(SwipeAction.DELETE)
+                                        }
+                                        currentY > thresholdYPx && swipeDownEnabled -> {
+                                            offsetY.animateTo(screenHeight.toPx() * 1.5f, spring())
+                                            onSwipe(SwipeAction.ARCHIVE)
+                                        }
+                                        currentY < -thresholdYPx && swipeUpEnabled -> {
+                                            offsetY.animateTo(-screenHeight.toPx() * 1.5f, spring())
+                                            onSwipe(SwipeAction.FAVORITE)
+                                        }
+                                        else -> {
+                                            launch { offsetX.animateTo(0f, spring()) }
+                                            launch { offsetY.animateTo(0f, spring()) }
+                                        }
+                                    }
+                                    swipeOverlayState = null
+                                }
+                            }
+                        },
+                        onDrag = { change, dragAmount ->
+                            if (zoomScale == 1f) {
+                                // Swiping gesture
+                                change.consume()
+                                dragJobX?.cancel()
+                                dragJobY?.cancel()
+                                dragJobX = coroutineScope.launch {
+                                    offsetX.snapTo(offsetX.value + dragAmount.x)
+                                }
+                                dragJobY = coroutineScope.launch {
+                                    offsetY.snapTo(offsetY.value + dragAmount.y)
+                                }
+
+                                swipeOverlayState = when {
+                                    abs(offsetX.value) > abs(offsetY.value) -> {
+                                        if (offsetX.value > 0) {
+                                            if (swipeRightEnabled) SwipeAction.KEEP else null
+                                        } else {
+                                            if (swipeLeftEnabled) SwipeAction.DELETE else null
+                                        }
+                                    }
+                                    else -> {
+                                        if (offsetY.value > 0) {
+                                            if (swipeDownEnabled) SwipeAction.ARCHIVE else null
+                                        } else {
+                                            if (swipeUpEnabled) SwipeAction.FAVORITE else null
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Zoom Panning gesture
+                                change.consume()
+                                zoomOffset = Offset(
+                                    x = zoomOffset.x + dragAmount.x,
+                                    y = zoomOffset.y + dragAmount.y
+                                )
+                            }
+                        }
                     )
                 }
-
-                // Temporary overlay sticker indicator
-                swipeOverlayState?.let { action ->
-                    Box(
+                .offset { IntOffset(offsetX.value.roundToInt(), offsetY.value.roundToInt()) }
+                .rotate(cardRotation)
+                .graphicsLayer {
+                    val sc = (1f - abs(rotationFraction) * 0.05f).coerceIn(0.95f, 1f)
+                    scaleX = sc
+                    scaleY = sc
+                }
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(24.dp))
+                    .testTag("swipe_photo_card"),
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.Black)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(Color.Black)
+                ) {
+                    // Actual photo - Aspect ratio strictly preserved, double-tap & pinch zoom supported
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(photo.uriString)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = photo.fileName,
+                        contentScale = ContentScale.Fit, // Aspect ratio preserved (no crop!)
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(
-                                when (action) {
-                                    SwipeAction.DELETE -> Color.Red.copy(alpha = 0.15f)
-                                    SwipeAction.KEEP -> Color.Green.copy(alpha = 0.15f)
-                                    SwipeAction.FAVORITE -> Color.Magenta.copy(alpha = 0.15f)
-                                    SwipeAction.ARCHIVE -> Color.Blue.copy(alpha = 0.15f)
-                                }
-                            )
+                            .pointerInput(photo.id) {
+                                detectTapGestures(
+                                    onDoubleTap = {
+                                        if (zoomScale > 1f) {
+                                            zoomScale = 1f
+                                            zoomOffset = Offset.Zero
+                                        } else {
+                                            zoomScale = 2.5f
+                                        }
+                                    }
+                                )
+                            }
+                            .transformable(state = transformState)
+                            .graphicsLayer {
+                                scaleX = zoomScale
+                                scaleY = zoomScale
+                                translationX = zoomOffset.x
+                                translationY = zoomOffset.y
+                            }
                     )
 
-                    Box(
+                    // Minimal semi-transparent Overlay top button triggers
+                    Row(
                         modifier = Modifier
-                            .align(Alignment.TopCenter)
-                            .padding(top = 40.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(
-                                when (action) {
-                                    SwipeAction.DELETE -> Color.Red
-                                    SwipeAction.KEEP -> Color.Green
-                                    SwipeAction.FAVORITE -> Color.Magenta
-                                    SwipeAction.ARCHIVE -> Color.Blue
-                                }
-                            )
-                            .padding(horizontal = 24.dp, vertical = 12.dp)
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = action.name,
-                            color = Color.White,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 20.sp,
-                            textAlign = TextAlign.Center
-                        )
+                        // 1. Info / Metadata Trigger toggle button
+                        IconButton(
+                            onClick = { metadataRequested = !metadataRequested },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = if (metadataRequested) MaterialTheme.colorScheme.primaryContainer else Color.Black.copy(alpha = 0.45f),
+                                contentColor = Color.White
+                            ),
+                            modifier = Modifier.testTag("toggle_metadata_button")
+                        ) {
+                            Icon(
+                                imageVector = if (metadataRequested) Icons.Default.Info else Icons.Outlined.Info,
+                                contentDescription = "Toggle Metadata Overlay"
+                            )
+                        }
+
+                        // 2. Lock / Vault Button directly on card
+                        IconButton(
+                            onClick = {
+                                viewModel.toggleVaultLock(photo.id)
+                            },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = Color.Black.copy(alpha = 0.45f),
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Secure in Vault",
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
+
+                    // Metadata Overlay (semi-transparent sheet - requested details only!)
+                    androidx.compose.animation.AnimatedVisibility(
+                        visible = metadataRequested,
+                        enter = slideInVertically(initialOffsetY = { it }) + fadeIn(),
+                        exit = slideOutVertically(targetOffsetY = { it }) + fadeOut(),
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                    ) {
+                        Surface(
+                            color = Color.Black.copy(alpha = 0.75f),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .padding(20.dp)
+                                    .navigationBarsPadding(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = photo.fileName,
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        text = viewModel.formatBytes(photo.size),
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                Text(
+                                    text = "Folder: ${photo.category} • Size: ${photo.width}x${photo.height} • ${photo.mimeType}",
+                                    color = Color.LightGray,
+                                    fontSize = 11.sp
+                                )
+
+                                Divider(color = Color.White.copy(alpha = 0.15f))
+
+                                // Dynamic Quality Blur metrics
+                                item.analysis?.let { ans ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text("Sharpness Score", fontSize = 9.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                                            LinearProgressIndicator(
+                                                progress = ans.sharpnessScore,
+                                                color = Color(0xFF81C784),
+                                                trackColor = Color.White.copy(alpha = 0.1f),
+                                                modifier = Modifier.fillMaxWidth().height(4.dp).padding(vertical = 2.dp)
+                                            )
+                                        }
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text("Blur Score", fontSize = 9.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                                            LinearProgressIndicator(
+                                                progress = ans.blurScore,
+                                                color = Color(0xFFE57373),
+                                                trackColor = Color.White.copy(alpha = 0.1f),
+                                                modifier = Modifier.fillMaxWidth().height(4.dp).padding(vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+
+                                    // Local face markers
+                                    if (ans.detectedFacesCount > 0) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            modifier = Modifier
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(Color(0xFF81C784).copy(alpha = 0.15f))
+                                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        ) {
+                                            Icon(imageVector = Icons.Default.Face, contentDescription = null, tint = Color(0xFF81C784), modifier = Modifier.size(14.dp))
+                                            Text("Identity Cluster: ${ans.detectedFaceNames}", fontSize = 10.sp, color = Color(0xFFE8F5E9), fontWeight = FontWeight.Bold)
+                                        }
+                                    }
+
+                                    // OCR Content
+                                    if (ans.extractedText.isNotEmpty()) {
+                                        Column(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .clip(RoundedCornerShape(6.dp))
+                                                .background(Color(0xFF64B5F6).copy(alpha = 0.12f))
+                                                .padding(8.dp)
+                                        ) {
+                                            Text("Extracted Text Info:", fontSize = 9.sp, color = Color(0xFF90CAF9), fontWeight = FontWeight.Bold)
+                                            Spacer(modifier = Modifier.height(2.dp))
+                                            Text(ans.extractedText, fontSize = 10.sp, color = Color(0xFFE3F2FD), maxLines = 2)
+                                        }
+                                    }
+                                }
+
+                                // Security block shield memory
+                                val memoryInfo = viewModel.checkMemoryProtection(item)
+                                if (memoryInfo != null) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(6.dp))
+                                            .background(Color(0xFFF2B8B5).copy(alpha = 0.15f))
+                                            .padding(8.dp)
+                                    ) {
+                                        Icon(imageVector = Icons.Default.Shield, contentDescription = null, tint = Color(0xFFF2B8B5), modifier = Modifier.size(16.dp))
+                                        Text("AI Safeguard Shield: ${memoryInfo.category} protection live", fontSize = 10.sp, color = Color(0xFFF2B8B5), fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Floating gesture state badge
+                    swipeOverlayState?.let { act ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    when (act) {
+                                        SwipeAction.DELETE -> Color.Red.copy(alpha = 0.18f)
+                                        SwipeAction.KEEP -> Color.Green.copy(alpha = 0.18f)
+                                        SwipeAction.FAVORITE -> Color.Magenta.copy(alpha = 0.18f)
+                                        SwipeAction.ARCHIVE -> Color.Blue.copy(alpha = 0.18f)
+                                    }
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(
+                                        when (act) {
+                                            SwipeAction.DELETE -> Color.Red
+                                            SwipeAction.KEEP -> Color.Green
+                                            SwipeAction.FAVORITE -> Color.Magenta
+                                            SwipeAction.ARCHIVE -> Color.Blue
+                                        }
+                                    )
+                                    .padding(horizontal = 20.dp, vertical = 10.dp)
+                            ) {
+                                Text(act.name, fontWeight = FontWeight.Black, color = Color.White, fontSize = 18.sp)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Complete Bottom Action Bar (Undo, Delete, Keep, Favorite, Archive)
+        Surface(
+            color = Color.Black.copy(alpha = 0.4f),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // 1. UNDO Action Button (Accessible)
+                IconButton(
+                    onClick = {
+                        viewModel.undoLastAction()
+                    },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color.White.copy(alpha = 0.1f),
+                        contentColor = Color.White
+                    ),
+                    modifier = Modifier
+                        .size(46.dp)
+                        .testTag("swipe_action_undo")
+                ) {
+                    Icon(imageVector = Icons.Default.Undo, contentDescription = "Undo LastSwipe", modifier = Modifier.size(20.dp))
+                }
+
+                // 2. DELETE Action Button (Swipe Left link)
+                IconButton(
+                    onClick = { triggerActionAnimated(SwipeAction.DELETE) },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color(0xFFFFD8D6).copy(alpha = 0.9f),
+                        contentColor = Color(0xFF601410)
+                    ),
+                    modifier = Modifier
+                        .size(56.dp)
+                        .testTag("swipe_action_delete")
+                ) {
+                    Icon(imageVector = Icons.Default.Delete, contentDescription = "Skip Delete", modifier = Modifier.size(26.dp))
+                }
+
+                // 3. FAVORITE Action Button (Swipe Up link)
+                IconButton(
+                    onClick = { triggerActionAnimated(SwipeAction.FAVORITE) },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color(0xFFFFD8E4).copy(alpha = 0.9f),
+                        contentColor = Color(0xFF492532)
+                    ),
+                    modifier = Modifier
+                        .size(52.dp)
+                        .testTag("swipe_action_favorite")
+                ) {
+                    Icon(imageVector = Icons.Default.Star, contentDescription = "Add Favorite", modifier = Modifier.size(22.dp))
+                }
+
+                // 4. ARCHIVE Action Button (Swipe Down link)
+                IconButton(
+                    onClick = { triggerActionAnimated(SwipeAction.ARCHIVE) },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color(0xFFE8DEF8).copy(alpha = 0.9f),
+                        contentColor = Color(0xFF1D192B)
+                    ),
+                    modifier = Modifier
+                        .size(52.dp)
+                        .testTag("swipe_action_archive")
+                ) {
+                    Icon(imageVector = Icons.Default.Archive, contentDescription = "Send Archive", modifier = Modifier.size(22.dp))
+                }
+
+                // 5. KEEP Action Button (Swipe Right link)
+                IconButton(
+                    onClick = { triggerActionAnimated(SwipeAction.KEEP) },
+                    colors = IconButtonDefaults.iconButtonColors(
+                        containerColor = Color(0xFFD0BCFF).copy(alpha = 0.9f),
+                        contentColor = Color(0xFF381E72)
+                    ),
+                    modifier = Modifier
+                        .size(56.dp)
+                        .testTag("swipe_action_keep")
+                ) {
+                    Icon(imageVector = Icons.Default.Check, contentDescription = "Keep Asset", modifier = Modifier.size(26.dp))
                 }
             }
         }
@@ -363,7 +824,7 @@ fun SwipeCardBackground(photo: PhotoEntity) {
                 scaleY = sc
                 translationY = 16f
             }
-            .border(1.dp, Color(0xFF938F99).copy(alpha = 0.2f), RoundedCornerShape(20.dp)),
+            .border(1.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -391,8 +852,8 @@ fun EmptySwipeState() {
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
-            .border(1.dp, Color(0xFF938F99).copy(alpha = 0.15f), RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
+            .border(1.dp, Color.White.copy(alpha = 0.15f), RoundedCornerShape(24.dp)),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF2B2930))
     ) {
         Column(
@@ -406,13 +867,13 @@ fun EmptySwipeState() {
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFD0BCFF).copy(alpha = 0.1f)),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = null,
-                    tint = Color(0xFFD0BCFF),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(36.dp)
                 )
             }
@@ -421,117 +882,18 @@ fun EmptySwipeState() {
                 text = "All Cleaned Up!",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFE6E1E5),
+                color = Color.White,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "No images or videos remaining in your queue. Scan for more items or browse your smart cleanup suggestions.",
+                text = "No images or videos remaining in your queue. Scan for more items or browse your settings category options to enable more items.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFFCAC4D0),
+                color = Color.LightGray,
                 textAlign = TextAlign.Center,
                 fontSize = 13.sp,
                 lineHeight = 20.sp
             )
-        }
-    }
-}
-
-@Composable
-fun GestureGuideLegend() {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
-            .border(1.dp, Color(0xFF938F99).copy(alpha = 0.15f), RoundedCornerShape(20.dp)),
-        color = Color(0xFF2B2930)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp, horizontal = 8.dp),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFF2B8B5).copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Swipe Left to Delete",
-                        tint = Color(0xFFF2B8B5),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text("Delete", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFE6E1E5))
-                Text("Swipe Left", style = MaterialTheme.typography.bodySmall, color = Color(0xFFCAC4D0), fontSize = 8.sp)
-            }
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFCBD2FF).copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Swipe Right to Keep",
-                        tint = Color(0xFFD0BCFF),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text("Keep", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFE6E1E5))
-                Text("Swipe Right", style = MaterialTheme.typography.bodySmall, color = Color(0xFFCAC4D0), fontSize = 8.sp)
-            }
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFFFD8E4).copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = "Swipe Up to Favorite",
-                        tint = Color(0xFFFFD8E4),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text("Favorite", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFE6E1E5))
-                Text("Swipe Up", style = MaterialTheme.typography.bodySmall, color = Color(0xFFCAC4D0), fontSize = 8.sp)
-            }
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFE8DEF8).copy(alpha = 0.15f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Archive,
-                        contentDescription = "Swipe Down to Archive",
-                        tint = Color(0xFFE8DEF8),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                Text("Archive", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFFE6E1E5))
-                Text("Swipe Down", style = MaterialTheme.typography.bodySmall, color = Color(0xFFCAC4D0), fontSize = 8.sp)
-            }
         }
     }
 }

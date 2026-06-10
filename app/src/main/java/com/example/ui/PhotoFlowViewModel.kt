@@ -11,6 +11,7 @@ import com.example.PhotoFlowApplication
 import com.example.api.BestShotResponse
 import com.example.api.GeminiClient
 import com.example.api.MemoryHighlightsResponse
+import com.example.data.AnalysisEntity
 import com.example.data.PhotoEntity
 import com.example.data.PhotoWithAnalysis
 import com.example.repository.PhotoRepository
@@ -41,12 +42,67 @@ class PhotoFlowViewModel(private val repository: PhotoRepository) : ViewModel() 
     private val _selectedCategory = MutableStateFlow<String?>(null)
     val selectedCategory: StateFlow<String?> = _selectedCategory.asStateFlow()
 
+    // Filter Chips States
+    private val _mediaTypeFilter = MutableStateFlow("All")
+    val mediaTypeFilter = _mediaTypeFilter.asStateFlow()
+
+    private val _aiFilter = MutableStateFlow("All")
+    val aiFilter = _aiFilter.asStateFlow()
+
+    private val _dateFilter = MutableStateFlow("Any Time")
+    val dateFilter = _dateFilter.asStateFlow()
+
     // Active screen navigation
     private val _activeRoute = MutableStateFlow("dashboard")
     val activeRoute: StateFlow<String> = _activeRoute.asStateFlow()
 
     // Action stack for Undos
     private val actionHistory = mutableListOf<Long>()
+
+    // Customize Settings / Preferences
+    private val prefs by lazy {
+        PhotoFlowApplication.instance.getSharedPreferences("photoflow_prefs", android.content.Context.MODE_PRIVATE)
+    }
+
+    private val _autoAiAnalysisEnabled = MutableStateFlow(prefs.getBoolean("auto_ai_analysis", false))
+    val autoAiAnalysisEnabled = _autoAiAnalysisEnabled.asStateFlow()
+
+    private val _swipeLeftEnabled = MutableStateFlow(prefs.getBoolean("swipe_left_enabled", true))
+    val swipeLeftEnabled = _swipeLeftEnabled.asStateFlow()
+
+    private val _swipeRightEnabled = MutableStateFlow(prefs.getBoolean("swipe_right_enabled", true))
+    val swipeRightEnabled = _swipeRightEnabled.asStateFlow()
+
+    private val _swipeUpEnabled = MutableStateFlow(prefs.getBoolean("swipe_up_enabled", true))
+    val swipeUpEnabled = _swipeUpEnabled.asStateFlow()
+
+    private val _swipeDownEnabled = MutableStateFlow(prefs.getBoolean("swipe_down_enabled", true))
+    val swipeDownEnabled = _swipeDownEnabled.asStateFlow()
+
+    fun setAutoAiAnalysisEnabled(enabled: Boolean) {
+        _autoAiAnalysisEnabled.value = enabled
+        prefs.edit().putBoolean("auto_ai_analysis", enabled).apply()
+    }
+
+    fun setSwipeLeftEnabled(enabled: Boolean) {
+        _swipeLeftEnabled.value = enabled
+        prefs.edit().putBoolean("swipe_left_enabled", enabled).apply()
+    }
+
+    fun setSwipeRightEnabled(enabled: Boolean) {
+        _swipeRightEnabled.value = enabled
+        prefs.edit().putBoolean("swipe_right_enabled", enabled).apply()
+    }
+
+    fun setSwipeUpEnabled(enabled: Boolean) {
+        _swipeUpEnabled.value = enabled
+        prefs.edit().putBoolean("swipe_up_enabled", enabled).apply()
+    }
+
+    fun setSwipeDownEnabled(enabled: Boolean) {
+        _swipeDownEnabled.value = enabled
+        prefs.edit().putBoolean("swipe_down_enabled", enabled).apply()
+    }
 
     // Gemini API states
     private val _aiBestShotResult = MutableStateFlow<BestShotResponse?>(null)
@@ -61,37 +117,257 @@ class PhotoFlowViewModel(private val repository: PhotoRepository) : ViewModel() 
     private val _isAiLoading = MutableStateFlow(false)
     val isAiLoading: StateFlow<Boolean> = _isAiLoading.asStateFlow()
 
+    // --- AI Feature 11: Private Vault states ---
+    private val _lockedPhotoIds = MutableStateFlow<Set<Long>>(emptySet())
+    val lockedPhotoIds = _lockedPhotoIds.asStateFlow()
+
+    fun toggleVaultLock(photoId: Long) {
+        val current = _lockedPhotoIds.value.toMutableSet()
+        if (current.contains(photoId)) {
+            current.remove(photoId)
+        } else {
+            current.add(photoId)
+        }
+        _lockedPhotoIds.value = current
+        prefs.edit().putStringSet("vault_locked_ids", current.map { it.toString() }.toSet()).apply()
+    }
+
     // 1. Photos stream - combined with search and category filters
-    val galleryPhotos: StateFlow<List<PhotoEntity>> = combine(
-        repository.activePhotos,
+    val galleryPhotos: StateFlow<List<PhotoWithAnalysis>> = combine(
+        repository.activePhotosWithAnalysis,
         _searchQuery,
-        _selectedCategory
-    ) { photos, query, category ->
-        var result = photos
-        if (query.isNotEmpty()) {
-            result = result.filter { 
-                it.fileName.contains(query, ignoreCase = true) || 
-                formatDate(it.dateAdded).contains(query, ignoreCase = true)
+        _selectedCategory,
+        _mediaTypeFilter,
+        _aiFilter,
+        _dateFilter,
+        _lockedPhotoIds
+    ) { flows ->
+        @Suppress("UNCHECKED_CAST")
+        val photosWithAnalysis = flows[0] as List<PhotoWithAnalysis>
+        val query = flows[1] as String
+        val category = flows[2] as String?
+        val mediaType = flows[3] as String
+        val aiCategory = flows[4] as String
+        val dateRange = flows[5] as String
+        val locked = flows[6] as Set<Long>
+
+        // Hide locked photos from normal gallery list
+        var result = photosWithAnalysis.filter { !locked.contains(it.photo.id) }
+
+        // Apply SharedPreferences category permissions
+        val isCamEnabled = prefs.getBoolean("cat_enabled_Camera Photos", true)
+        val isScrEnabled = prefs.getBoolean("cat_enabled_Screenshots", true)
+        val isWaEnabled = prefs.getBoolean("cat_enabled_WhatsApp Images", true)
+        val isDlEnabled = prefs.getBoolean("cat_enabled_Downloads", true)
+        val isVidEnabled = prefs.getBoolean("cat_enabled_Videos", true)
+        val isFavEnabled = prefs.getBoolean("cat_enabled_Favorites", true)
+        val isArcEnabled = prefs.getBoolean("cat_enabled_Archived", true)
+
+        result = result.filter { item ->
+            val cat = item.photo.category
+            if (!isCamEnabled && cat == "Camera Photos") return@filter false
+            if (!isScrEnabled && (cat == "Screenshots" || item.analysis?.screenshotProbabilityScore?.let { it > 0.8f } == true)) return@filter false
+            if (!isWaEnabled && cat == "WhatsApp Images") return@filter false
+            if (!isDlEnabled && cat == "Downloads") return@filter false
+            if (!isVidEnabled && item.photo.mimeType.startsWith("video/")) return@filter false
+            if (!isFavEnabled && item.photo.isFavorite) return@filter false
+            if (!isArcEnabled && item.photo.isArchived) return@filter false
+            true
+        }
+
+        // Apply media type filter
+        if (mediaType != "All") {
+            result = result.filter { item ->
+                if (mediaType == "Images") {
+                    item.photo.mimeType.startsWith("image/")
+                } else {
+                    item.photo.mimeType.startsWith("video/")
+                }
             }
         }
-        if (category != null) {
-            result = result.filter { it.category == category }
+
+        // Apply AI / Quality filter
+        if (aiCategory != "All") {
+            result = result.filter { item ->
+                when (aiCategory) {
+                    "Blurry" -> item.analysis?.let { ans -> ans.blurScore > 0.6f } == true
+                    "Dark/Light" -> item.analysis?.let { ans -> ans.brightnessScore < 0.2f || ans.brightnessScore > 0.8f } == true
+                    "Screenshots" -> item.photo.category == "Screenshots" || item.analysis?.let { ans -> ans.screenshotProbabilityScore > 0.8f } == true
+                    "With Faces" -> item.analysis?.let { ans -> ans.detectedFacesCount > 0 } == true
+                    "OCR / Documents" -> item.analysis?.let { ans -> ans.extractedText.isNotEmpty() } == true
+                    else -> true
+                }
+            }
         }
+
+        // Apply Date filter
+        if (dateRange != "Any Time") {
+            val currentTimeSeconds = System.currentTimeMillis() / 1000L
+            val thresholdSeconds = when (dateRange) {
+                "Today" -> currentTimeSeconds - 86450L
+                "Last 7 Days" -> currentTimeSeconds - 7 * 86450L
+                "Last 30 Days" -> currentTimeSeconds - 30 * 86450L
+                else -> 0L
+            }
+            if (thresholdSeconds > 0) {
+                result = result.filter { it.photo.dateAdded >= thresholdSeconds }
+            }
+        }
+
+        // Apply search query (AI Feature 12: Natural Language Search Support)
+        if (query.isNotEmpty()) {
+            val q = query.lowercase().trim()
+            if (q.contains("blurry") || q.contains("blur")) {
+                result = result.filter { it.analysis?.blurScore?.let { b -> b > 0.45f } == true }
+            } else if (q.contains("screenshot") || q.contains("capture")) {
+                result = result.filter { it.photo.category == "Screenshots" || it.analysis?.screenshotProbabilityScore?.let { s -> s > 0.7f } == true }
+            } else if (q.contains("family") || q.contains("group") || q.contains("people") || q.contains("friends")) {
+                result = result.filter { (it.analysis?.detectedFacesCount ?: 0) > 1 || (it.analysis?.detectedFaceNames?.lowercase()?.contains("family") == true) }
+            } else if (q.contains("best") || q.contains("sharpest") || q.contains("favorite")) {
+                result = result.filter { it.photo.isFavorite || calculateDeletionProbability(it) < 0.25f }
+            } else if (q.contains("dark") || q.contains("night")) {
+                result = result.filter { it.analysis?.brightnessScore?.let { b -> b < 0.25f } == true }
+            } else {
+                result = result.filter { item ->
+                    item.photo.fileName.contains(query, ignoreCase = true) || 
+                    formatDate(item.photo.dateAdded).contains(query, ignoreCase = true) ||
+                    item.analysis?.extractedText?.contains(query, ignoreCase = true) == true ||
+                    item.analysis?.detectedFaceNames?.contains(query, ignoreCase = true) == true ||
+                    item.photo.category.contains(query, ignoreCase = true)
+                }
+            }
+        }
+
+        // Apply selectedcategory
+        if (category != null) {
+            result = result.filter { item ->
+                if (category == "Favorites") {
+                    item.photo.isFavorite
+                } else if (category == "Videos") {
+                    item.photo.mimeType.startsWith("video/")
+                } else {
+                    item.photo.category == category
+                }
+            }
+        }
+
         result
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // 2. Photos with analysis score stream for "Smart Cleanup" ranking
-    val smartCleanupPhotos: StateFlow<List<PhotoWithAnalysis>> = repository.activePhotosWithAnalysis
-        .combine(_searchQuery) { list, query ->
-            var result = list
-            if (query.isNotEmpty()) {
-                result = result.filter { 
-                    it.photo.fileName.contains(query, ignoreCase = true)
+    val smartCleanupPhotos: StateFlow<List<PhotoWithAnalysis>> = combine(
+        repository.activePhotosWithAnalysis,
+        _searchQuery,
+        _selectedCategory,
+        _mediaTypeFilter,
+        _aiFilter,
+        _dateFilter,
+        _lockedPhotoIds
+    ) { flows ->
+        @Suppress("UNCHECKED_CAST")
+        val photosWithAnalysis = flows[0] as List<PhotoWithAnalysis>
+        val query = flows[1] as String
+        val category = flows[2] as String?
+        val mediaType = flows[3] as String
+        val aiCategory = flows[4] as String
+        val dateRange = flows[5] as String
+        val locked = flows[6] as Set<Long>
+
+        // Hide locked photos from smart cleanup list
+        var result = photosWithAnalysis.filter { !locked.contains(it.photo.id) }
+
+        // Apply SharedPreferences category permissions
+        val isCamEnabled = prefs.getBoolean("cat_enabled_Camera Photos", true)
+        val isScrEnabled = prefs.getBoolean("cat_enabled_Screenshots", true)
+        val isWaEnabled = prefs.getBoolean("cat_enabled_WhatsApp Images", true)
+        val isDlEnabled = prefs.getBoolean("cat_enabled_Downloads", true)
+        val isVidEnabled = prefs.getBoolean("cat_enabled_Videos", true)
+        val isFavEnabled = prefs.getBoolean("cat_enabled_Favorites", true)
+        val isArcEnabled = prefs.getBoolean("cat_enabled_Archived", true)
+
+        result = result.filter { item ->
+            val cat = item.photo.category
+            if (!isCamEnabled && cat == "Camera Photos") return@filter false
+            if (!isScrEnabled && (cat == "Screenshots" || item.analysis?.screenshotProbabilityScore?.let { it > 0.8f } == true)) return@filter false
+            if (!isWaEnabled && cat == "WhatsApp Images") return@filter false
+            if (!isDlEnabled && cat == "Downloads") return@filter false
+            if (!isVidEnabled && item.photo.mimeType.startsWith("video/")) return@filter false
+            if (!isFavEnabled && item.photo.isFavorite) return@filter false
+            if (!isArcEnabled && item.photo.isArchived) return@filter false
+            true
+        }
+
+        // Apply media type filter
+        if (mediaType != "All") {
+            result = result.filter { item ->
+                if (mediaType == "Images") {
+                    item.photo.mimeType.startsWith("image/")
+                } else {
+                    item.photo.mimeType.startsWith("video/")
                 }
             }
-            // Sort by deletion probability
-            result.sortedByDescending { calculateDeletionProbability(it) }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }
+
+        // Apply AI / Quality filter
+        if (aiCategory != "All") {
+            result = result.filter { item ->
+                when (aiCategory) {
+                    "Blurry" -> item.analysis?.let { ans -> ans.blurScore > 0.6f } == true
+                    "Dark/Light" -> item.analysis?.let { ans -> ans.brightnessScore < 0.2f || ans.brightnessScore > 0.8f } == true
+                    "Screenshots" -> item.photo.category == "Screenshots" || item.analysis?.let { ans -> ans.screenshotProbabilityScore > 0.8f } == true
+                    "With Faces" -> item.analysis?.let { ans -> ans.detectedFacesCount > 0 } == true
+                    "OCR / Documents" -> item.analysis?.let { ans -> ans.extractedText.isNotEmpty() } == true
+                    else -> true
+                }
+            }
+        }
+
+        // Apply Date filter
+        if (dateRange != "Any Time") {
+            val currentTimeSeconds = System.currentTimeMillis() / 1000L
+            val thresholdSeconds = when (dateRange) {
+                "Today" -> currentTimeSeconds - 86450L
+                "Last 7 Days" -> currentTimeSeconds - 7 * 86450L
+                "Last 30 Days" -> currentTimeSeconds - 30 * 86450L
+                else -> 0L
+            }
+            if (thresholdSeconds > 0) {
+                result = result.filter { it.photo.dateAdded >= thresholdSeconds }
+            }
+        }
+
+        if (query.isNotEmpty()) {
+            result = result.filter { item ->
+                item.photo.fileName.contains(query, ignoreCase = true) ||
+                item.analysis?.extractedText?.contains(query, ignoreCase = true) == true ||
+                item.analysis?.detectedFaceNames?.contains(query, ignoreCase = true) == true
+            }
+        }
+
+        if (category != null) {
+            result = result.filter { item ->
+                if (category == "Favorites") {
+                    item.photo.isFavorite
+                } else if (category == "Videos") {
+                    item.photo.mimeType.startsWith("video/")
+                } else {
+                    item.photo.category == category
+                }
+            }
+        }
+
+        // Sort by deletion probability
+        result = result.sortedByDescending { calculateDeletionProbability(it) }
+        result
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // --- Vault stream for private locker ---
+    val vaultPhotos: StateFlow<List<PhotoWithAnalysis>> = combine(
+        repository.activePhotosWithAnalysis,
+        _lockedPhotoIds
+    ) { photos, locked ->
+        photos.filter { locked.contains(it.photo.id) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // 3. Review Queue
     val reviewQueue: StateFlow<List<PhotoEntity>> = repository.reviewQueue
@@ -120,6 +396,10 @@ class PhotoFlowViewModel(private val repository: PhotoRepository) : ViewModel() 
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
+        // Load locked IDs on launch
+        val saved = prefs.getStringSet("vault_locked_ids", emptySet()) ?: emptySet()
+        _lockedPhotoIds.value = saved.mapNotNull { it.toLongOrNull() }.toSet()
+
         // Initial scan of photo metadata on launch
         triggerMediaScan()
     }
@@ -163,6 +443,18 @@ class PhotoFlowViewModel(private val repository: PhotoRepository) : ViewModel() 
         _selectedCategory.value = category
     }
 
+    fun setMediaTypeFilter(filter: String) {
+        _mediaTypeFilter.value = filter
+    }
+
+    fun setAiFilter(filter: String) {
+        _aiFilter.value = filter
+    }
+
+    fun setDateFilter(filter: String) {
+        _dateFilter.value = filter
+    }
+
     fun swipeAction(photoId: Long, action: SwipeAction) {
         viewModelScope.launch {
             repository.updatePhotoSwipeAction(photoId, action)
@@ -189,6 +481,18 @@ class PhotoFlowViewModel(private val repository: PhotoRepository) : ViewModel() 
     fun rejectAllDeletions() {
         viewModelScope.launch {
             val ids = repository.reviewQueue.first().map { it.id }
+            repository.rejectDeletions(ids)
+        }
+    }
+
+    fun confirmMultipleDeletions(ids: List<Long>) {
+        viewModelScope.launch {
+            repository.confirmDeletions(ids)
+        }
+    }
+
+    fun rejectMultipleDeletions(ids: List<Long>) {
+        viewModelScope.launch {
             repository.rejectDeletions(ids)
         }
     }
@@ -294,6 +598,68 @@ class PhotoFlowViewModel(private val repository: PhotoRepository) : ViewModel() 
         _aiBestShotResult.value = null
     }
 
+    // --- AI Feature 1: Memory Protection System ---
+    fun checkMemoryProtection(item: PhotoWithAnalysis): MemoryProtectionInfo? {
+        val photo = item.photo
+        val analysis = item.analysis
+
+        if (photo.isFavorite) {
+            return MemoryProtectionInfo(
+                category = "User Starred Favorite",
+                confidence = 100,
+                explanation = "You manually pinned or favorited this item, which completely locks it against any swiping deletes."
+            )
+        }
+
+        val lowerName = photo.fileName.lowercase()
+        val lowerPath = photo.filePath.lowercase()
+        val lowerText = (analysis?.extractedText ?: "").lowercase()
+        val lowerFaces = (analysis?.detectedFaceNames ?: "").lowercase()
+        val facesCount = analysis?.detectedFacesCount ?: 0
+
+        if (lowerText.contains("birthday") || lowerText.contains("cake") || lowerText.contains("bday") || lowerName.contains("birthday") || lowerName.contains("bday")) {
+            return MemoryProtectionInfo(
+                category = "Birthday Celebration",
+                confidence = 95,
+                explanation = "A celebratory birthday event is spotted based on file characteristics or local OCR. AI shields this memory."
+            )
+        }
+
+        if (lowerText.contains("graduation") || lowerText.contains("diploma") || lowerText.contains("grad") || lowerName.contains("graduation") || lowerName.contains("grad")) {
+            return MemoryProtectionInfo(
+                category = "Graduation / Milestone",
+                confidence = 98,
+                explanation = "Academic achievement or milestone indicators found. Highly recommended to keep on device."
+            )
+        }
+
+        if (lowerText.contains("trip") || lowerText.contains("travel") || lowerText.contains("flight") || lowerText.contains("vacation") || lowerText.contains("beach") || lowerText.contains("hotel") || lowerName.contains("travel") || lowerName.contains("trip") || lowerPath.contains("vacation")) {
+            return MemoryProtectionInfo(
+                category = "Travel Memoir",
+                confidence = 88,
+                explanation = "Travel, flight, beach, or scenic terms detected. Retain this memory of exploration."
+            )
+        }
+
+        if (facesCount > 2) {
+            return MemoryProtectionInfo(
+                category = "Family / Group Moment",
+                confidence = 92,
+                explanation = "Contains several active faces ($facesCount) in a portrait layout, representing a cherished family or friendship circle."
+            )
+        }
+
+        if (lowerFaces.contains("family") || lowerFaces.contains("alice") || lowerFaces.contains("mom") || lowerFaces.contains("dad")) {
+            return MemoryProtectionInfo(
+                category = "Saved Loved Ones",
+                confidence = 94,
+                explanation = "Identified close connections (e.g., family group, Alice) inside the photo frame."
+            )
+        }
+
+        return null
+    }
+
     // --- Helpers ---
 
     fun calculateDeletionProbability(item: PhotoWithAnalysis): Float {
@@ -345,3 +711,9 @@ class PhotoFlowViewModelFactory(private val repository: PhotoRepository) : ViewM
         throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
+
+data class MemoryProtectionInfo(
+    val category: String,
+    val confidence: Int,
+    val explanation: String
+)

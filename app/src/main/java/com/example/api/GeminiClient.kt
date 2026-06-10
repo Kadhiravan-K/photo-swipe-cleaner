@@ -112,6 +112,89 @@ object GeminiClient {
         }
     }
 
+    suspend fun getDetailedImageAnalysis(bitmap: Bitmap): GeminiImageDetails? {
+        val apiKey = BuildConfig.GEMINI_API_KEY
+        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
+            Log.e(TAG, "Gemini API Key is not set or is placeholder")
+            return null
+        }
+
+        try {
+            val partsArray = JSONArray()
+
+            val imagePart = JSONObject().apply {
+                put("inlineData", JSONObject().apply {
+                    put("mimeType", "image/jpeg")
+                    put("data", bitmap.toBase64())
+                })
+            }
+            partsArray.put(imagePart)
+
+            val promptPart = JSONObject().apply {
+                put("text", """
+                    Analyze this photo carefully. Perform two key tasks:
+                    1. Face Recognition: Identify and count any human faces in the image. If faces of specific famous people or common names are recognizable, guess/detail them. Otherwise, list description-based labels for each unique face (e.g. "baby boy", "smiling woman with brown hair", "man with glasses").
+                    2. Document / Text analysis: Handwrite or print OCR extraction of any text, tags, watermarks, receipts, signs, or text-heavy elements visible in the graphic.
+                    
+                    Output your response STRICTLY as a JSON object with this format, do not include markdown blocks:
+                    {
+                      "facesCount": 0,
+                      "faceNames": "comma-separated list of recognized individuals or face descriptions",
+                      "extractedText": "all readable words and phrases detected in the image"
+                    }
+                """.trimIndent())
+            }
+            partsArray.put(promptPart)
+
+            val requestJson = JSONObject().apply {
+                put("contents", JSONArray().put(JSONObject().apply {
+                    put("parts", partsArray)
+                }))
+                put("generationConfig", JSONObject().apply {
+                    put("responseMimeType", "application/json")
+                    put("temperature", 0.3)
+                })
+            }
+
+            val requestBody = requestJson.toString().toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("$BASE_URL?key=$apiKey")
+                .post(requestBody)
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) {
+                    Log.e(TAG, "Gemini image analysis API request failed: ${response.code}")
+                    return null
+                }
+
+                val responseBodyStr = response.body?.string() ?: return null
+                val responseJson = JSONObject(responseBodyStr)
+                
+                val textResponse = responseJson
+                    .getJSONArray("candidates")
+                    .getJSONObject(0)
+                    .getJSONObject("content")
+                    .getJSONArray("parts")
+                    .getJSONObject(0)
+                    .getString("text")
+
+                val cleanJsonStr = textResponse.replace("```json", "").replace("```", "").trim()
+                val parsedResult = JSONObject(cleanJsonStr)
+
+                return GeminiImageDetails(
+                    facesCount = parsedResult.optInt("facesCount", 0),
+                    faceNames = parsedResult.optString("faceNames", ""),
+                    extractedText = parsedResult.optString("extractedText", "")
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in getDetailedImageAnalysis", e)
+            return null
+        }
+    }
+
     suspend fun getMemoryHighlights(
         monthName: String,
         statsText: String
@@ -262,4 +345,10 @@ data class MemoryHighlightsResponse(
     val summary: String,
     val mostPhotographed: String,
     val storageTrend: String
+)
+
+data class GeminiImageDetails(
+    val facesCount: Int,
+    val faceNames: String,
+    val extractedText: String
 )

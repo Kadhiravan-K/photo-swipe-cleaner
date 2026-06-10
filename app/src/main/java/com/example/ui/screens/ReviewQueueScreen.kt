@@ -35,7 +35,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,13 +63,23 @@ fun ReviewQueueScreen(
     modifier: Modifier = Modifier
 ) {
     val reviewItems by viewModel.reviewQueue.collectAsStateWithLifecycle()
+    val selectedItems = remember { mutableStateListOf<Long>() }
+
+    // Auto-cleanup selected list if items are removed/purged
+    LaunchedEffect(reviewItems) {
+        val activeIds = reviewItems.map { it.id }.toSet()
+        val staleIds = selectedItems.filter { !activeIds.contains(it) }
+        if (staleIds.isNotEmpty()) {
+            selectedItems.removeAll(staleIds)
+        }
+    }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Headers
+        // Headers & Bulk Actions
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -84,7 +98,7 @@ fun ReviewQueueScreen(
                 )
             }
 
-            if (reviewItems.isNotEmpty()) {
+            if (reviewItems.isNotEmpty() && selectedItems.isEmpty()) {
                 Button(
                     onClick = { viewModel.confirmAllDeletions() },
                     colors = ButtonDefaults.buttonColors(
@@ -100,26 +114,117 @@ fun ReviewQueueScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         if (reviewItems.isNotEmpty()) {
+            // Select All / Deselect All control
+            val isAllSelected = selectedItems.size == reviewItems.size && reviewItems.isNotEmpty()
+            
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedButton(
-                    onClick = { viewModel.rejectAllDeletions() },
+                    onClick = {
+                        if (isAllSelected) {
+                            selectedItems.clear()
+                        } else {
+                            selectedItems.clear()
+                            selectedItems.addAll(reviewItems.map { it.id })
+                        }
+                    },
                     shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.height(34.dp).testTag("select_all_toggle_button")
                 ) {
-                    Icon(imageVector = Icons.Default.KeyboardReturn, contentDescription = null, modifier = Modifier.size(14.dp))
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text("Restore All", fontSize = 12.sp)
+                    Text(
+                        text = if (isAllSelected) "Deselect All" else "Select All",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                if (selectedItems.isNotEmpty()) {
+                    OutlinedButton(
+                        onClick = { selectedItems.clear() },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.height(34.dp)
+                    ) {
+                        Text("Clear Selection", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                } else {
+                    OutlinedButton(
+                        onClick = { viewModel.rejectAllDeletions() },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.height(34.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.KeyboardReturn, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Restore All", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Batch Action Panel (Sticky top bar when items are selected)
+        if (selectedItems.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.25f))
+                    .border(1.2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${selectedItems.size} selected for action",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = {
+                            viewModel.rejectMultipleDeletions(selectedItems.toList())
+                            selectedItems.clear()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.height(32.dp).testTag("batch_restore_button")
+                    ) {
+                        Icon(imageVector = Icons.Default.KeyboardReturn, contentDescription = null, modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Restore", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = {
+                            viewModel.confirmMultipleDeletions(selectedItems.toList())
+                            selectedItems.clear()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                            contentColor = MaterialTheme.colorScheme.onError
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.height(32.dp).testTag("batch_purge_button")
+                    ) {
+                        Icon(imageVector = Icons.Default.DeleteForever, contentDescription = null, modifier = Modifier.size(13.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Delete", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(14.dp))
+        }
 
         if (reviewItems.isEmpty()) {
             EmptyReviewQueueState()
@@ -131,7 +236,19 @@ fun ReviewQueueScreen(
                 modifier = Modifier.weight(1f)
             ) {
                 items(reviewItems, key = { it.id }) { item ->
-                    ReviewQueueItemCard(item = item, viewModel = viewModel)
+                    val isSelected = selectedItems.contains(item.id)
+                    ReviewQueueItemCard(
+                        item = item, 
+                        viewModel = viewModel,
+                        isSelected = isSelected,
+                        onSelectToggle = {
+                            if (isSelected) {
+                                selectedItems.remove(item.id)
+                            } else {
+                                selectedItems.add(item.id)
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -141,12 +258,20 @@ fun ReviewQueueScreen(
 @Composable
 fun ReviewQueueItemCard(
     item: PhotoEntity,
-    viewModel: PhotoFlowViewModel
+    viewModel: PhotoFlowViewModel,
+    isSelected: Boolean,
+    onSelectToggle: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, Color(0xFF938F99).copy(alpha = 0.15f), RoundedCornerShape(20.dp))
+            .clickable { onSelectToggle() }
+            .border(
+                1.5.dp, 
+                if (isSelected) MaterialTheme.colorScheme.primary
+                else Color(0xFF938F99).copy(alpha = 0.15f), 
+                RoundedCornerShape(20.dp)
+            )
             .testTag("review_item_card_${item.id}"),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color(0xFF2B2930))
@@ -167,6 +292,36 @@ fun ReviewQueueItemCard(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
+
+                // Selection check indicator in top-start
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(8.dp)
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (isSelected) MaterialTheme.colorScheme.primary
+                            else Color.Black.copy(alpha = 0.45f)
+                        )
+                        .border(
+                            1.5.dp, 
+                            if (isSelected) Color.Transparent 
+                            else Color.White.copy(alpha = 0.8f), 
+                            CircleShape
+                        )
+                        .clickable { onSelectToggle() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Selected Check",
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
 
                 // Indication overlay of size saved
                 Box(

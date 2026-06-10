@@ -11,10 +11,10 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PhotoDao {
 
-    @Query("SELECT * FROM photos WHERE isDeletedCandidate = 0 AND isArchived = 0 ORDER BY dateAdded DESC")
+    @Query("SELECT * FROM photos WHERE isDeletedCandidate = 0 AND isArchived = 0 AND isSwiped = 0 ORDER BY dateAdded DESC")
     fun getActivePhotos(): Flow<List<PhotoEntity>>
 
-    @Query("SELECT * FROM photos WHERE isDeletedCandidate = 0 AND isArchived = 0 ORDER BY dateAdded DESC")
+    @Query("SELECT * FROM photos WHERE isDeletedCandidate = 0 AND isArchived = 0 AND isSwiped = 0 ORDER BY dateAdded DESC")
     suspend fun getActivePhotosList(): List<PhotoEntity>
 
     @Query("SELECT * FROM photos WHERE isDeletedCandidate = 1 AND reviewConfirmed = 0 ORDER BY dateAdded DESC")
@@ -29,7 +29,7 @@ interface PhotoDao {
     @Query("SELECT * FROM photos WHERE isFavorite = 1 ORDER BY dateAdded DESC")
     fun getFavoritePhotos(): Flow<List<PhotoEntity>>
 
-    @Query("SELECT * FROM photos WHERE category = :category AND isDeletedCandidate = 0 AND isArchived = 0 ORDER BY dateAdded DESC")
+    @Query("SELECT * FROM photos WHERE category = :category AND isDeletedCandidate = 0 AND isArchived = 0 AND isSwiped = 0 ORDER BY dateAdded DESC")
     fun getPhotosByCategory(category: String): Flow<List<PhotoEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -59,18 +59,24 @@ interface PhotoDao {
     suspend fun getAnalysisForPhoto(photoId: Long): AnalysisEntity?
 
     @Transaction
-    @Query("SELECT * FROM photos WHERE isDeletedCandidate = 0 AND isArchived = 0 ORDER BY dateAdded DESC")
+    @Query("SELECT * FROM photos WHERE isDeletedCandidate = 0 AND isArchived = 0 AND isSwiped = 0 ORDER BY dateAdded DESC")
     fun getActivePhotosWithAnalysis(): Flow<List<PhotoWithAnalysis>>
 
     @Transaction
     @Query("SELECT * FROM photos WHERE id = :id")
     suspend fun getPhotoWithAnalysisById(id: Long): PhotoWithAnalysis?
 
-    @Query("SELECT * FROM photos WHERE id NOT IN (SELECT photoId FROM photo_analysis WHERE isAnalyzed = 1) AND isDeletedCandidate = 0 AND isArchived = 0")
+    @Query("SELECT * FROM photos WHERE id NOT IN (SELECT photoId FROM photo_analysis WHERE isAnalyzed = 1) AND isDeletedCandidate = 0 AND isArchived = 0 AND isSwiped = 0")
     suspend fun getUnanalyzedPhotos(): List<PhotoEntity>
 
     // --- Search ---
-    @Query("SELECT * FROM photos WHERE fileName LIKE :query AND isDeletedCandidate = 0 AND isArchived = 0 ORDER BY dateAdded DESC")
+    @Query("""
+        SELECT photos.* FROM photos 
+        LEFT JOIN photo_analysis ON photos.id = photo_analysis.photoId 
+        WHERE (photos.fileName LIKE :query OR photo_analysis.extractedText LIKE :query OR photo_analysis.detectedFaceNames LIKE :query) 
+        AND photos.isDeletedCandidate = 0 AND photos.isArchived = 0 AND photos.isSwiped = 0 
+        ORDER BY photos.dateAdded DESC
+    """)
     fun searchPhotos(query: String): Flow<List<PhotoEntity>>
 
     // --- Stats & Dashboard ---
@@ -78,7 +84,7 @@ interface PhotoDao {
     @Query("SELECT COUNT(*) FROM photos")
     fun getTotalPhotosCountFlow(): Flow<Int>
 
-    @Query("SELECT COUNT(*) FROM photos WHERE isDeletedCandidate = 0 AND isArchived = 0")
+    @Query("SELECT COUNT(*) FROM photos WHERE isDeletedCandidate = 0 AND isArchived = 0 AND isSwiped = 0")
     fun getRemainingPhotosCountFlow(): Flow<Int>
 
     @Query("SELECT COUNT(*) FROM photos WHERE isDeletedCandidate = 1 AND reviewConfirmed = 0")

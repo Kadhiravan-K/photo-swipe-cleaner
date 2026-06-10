@@ -18,6 +18,7 @@ data class PhotoEntity(
     val isArchived: Boolean = false,
     val isDeletedCandidate: Boolean = false,
     val reviewConfirmed: Boolean = false,
+    val isSwiped: Boolean = false,
     val category: String, // "Screenshots", "Camera Photos", "Downloads", "WhatsApp", "Videos", "Other"
     val addedToDatabaseAt: Long = System.currentTimeMillis()
 )
